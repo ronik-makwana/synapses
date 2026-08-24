@@ -55,7 +55,7 @@ interface GraphEdgeUpdatePayload {
 import NoteNode from './NoteNode';
 import FileNode from './FileNode';
 // Import the modal
-import NoteEditModal from '../modals/NoteEditModal'; // Adjust path as needed
+import EditNoteModal from '@/components/notes/EditNoteModal';
 import EdgeLabelEditor from './EdgeLabelEditor'; // Import the new editor
 import EdgeActionMenu from './EdgeActionMenu'; // Import the action menu
 import toast from 'react-hot-toast';
@@ -364,16 +364,16 @@ const MindMapCanvas: React.FC = () => {
   };
 
   // Update modal save handler
-  const handleNoteModalSave = async (updatedData: NoteUpdateData) => {
-      if (!editingNoteData || typeof editingNoteData.original_note_id !== 'number') return;
-      
+  const handleNoteModalSave = async (noteId: number, updatedData: NoteUpdateData) => {
+      if (!editingNoteData || editingNoteData.type !== 'note') return;
+
       try {
-          await updateNote(editingNoteData.original_note_id, updatedData);
+          await updateNote(noteId, updatedData);
           const nodeId = getNodeId('note', editingNoteData.id);
           if (nodeId) {
               const storeUpdate: Partial<NoteNodeData> = {};
-              if (updatedData.title !== undefined) storeUpdate.label = updatedData.title;
-              if (updatedData.content !== undefined) storeUpdate.content = updatedData.content;
+              if (updatedData.title !== undefined && updatedData.title !== null) storeUpdate.label = updatedData.title;
+              if (updatedData.content !== undefined) storeUpdate.content = updatedData.content ?? null;
               updateNodeData(nodeId, storeUpdate);
           }
           toast.success('Note updated!');
@@ -394,18 +394,18 @@ const MindMapCanvas: React.FC = () => {
   const styledEdges = useMemo(() => edges.map(edge => {
     const labelKey = edge.label as EdgeStyleKey;
     const styleProps = edgeStyles[labelKey] || edgeStyles["Default"];
-    
+
     // Ensure base edge properties are preserved
     const baseEdge = { ...edge };
 
     // Merge style properties. Need to handle nested `style` object carefully.
-    if (styleProps.style) {
+    if ('style' in styleProps && styleProps.style) {
       baseEdge.style = { ...(baseEdge.style || {}), ...styleProps.style };
     }
     // Merge top-level style properties (like stroke, strokeWidth, animated)
-    const topLevelStyleProps = { ...styleProps };
-    delete topLevelStyleProps.style; // Remove nested style from direct merge
-    
+    const topLevelStyleProps = { ...styleProps as Record<string, unknown> };
+    delete (topLevelStyleProps as Record<string, unknown>).style; // Remove nested style from direct merge
+
     return {
       ...baseEdge,
       ...topLevelStyleProps // Apply stroke, strokeWidth, animated etc.
@@ -458,11 +458,22 @@ const MindMapCanvas: React.FC = () => {
       
       {/* Note Edit Modal */}
       {isNoteModalOpen && editingNoteData && editingNoteData.type === 'note' && (
-          <NoteEditModal
+          <EditNoteModal
               isOpen={isNoteModalOpen}
               onClose={handleNoteModalClose}
-              noteData={editingNoteData}
-              onSave={handleNoteModalSave}
+              note={{
+                id: editingNoteData.original_note_id,
+                user_id: 0,
+                title: editingNoteData.label,
+                content: editingNoteData.content,
+                userSummary: editingNoteData.userSummary,
+                tags: editingNoteData.tags ?? undefined,
+                position_x: editingNoteData.position_x,
+                position_y: editingNoteData.position_y,
+                created_at: editingNoteData.created_at,
+                updated_at: editingNoteData.updated_at,
+              }}
+              onUpdate={handleNoteModalSave}
           />
       )}
       {/* Task 4: Conditionally render Edge Action Menu */} 

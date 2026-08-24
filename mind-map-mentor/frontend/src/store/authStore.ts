@@ -76,8 +76,9 @@ export const useAuthStore = create<AuthState>()(
             console.log("AuthStore: getCurrentUser returned null (likely 401), logging out.");
             set({ token: null, user: null, isLoggedIn: false, isLoading: false });
           }
-        } catch (error: any) {
-          console.error("AuthStore: Error fetching user during checkAuthState:", error.message);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          console.error("AuthStore: Error fetching user during checkAuthState:", message);
           // Handle specific errors if needed, otherwise logout
           set({ token: null, user: null, isLoggedIn: false, isLoading: false });
         }

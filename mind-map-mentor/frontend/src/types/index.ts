@@ -29,7 +29,8 @@ export interface ApiFile {
   filename: string;
   mime_type: string | null;
   size: number | null;
-  created_at: string; // Or Date
+  graph_node_id?: number | null;
+  created_at: string;
 }
 
 // Data required to create a note
@@ -100,8 +101,8 @@ export interface BackendGraphNode {
     id: number;
     user_id: number;
     label: string | null;
-    data: { [key: string]: any } | null;
-    position: { x: number; y: number } | null; // Assuming backend stores position
+    data: Record<string, unknown> | null;
+    position: { x: number; y: number } | null;
     created_at: string;
     updated_at: string | null;
 }
@@ -113,7 +114,7 @@ export interface BackendGraphEdge {
     target_node_id: number;
     relationship_type: string | null;
     label: string | null;
-    data: { similarity_score?: number; [key: string]: any } | null;
+    data: Record<string, unknown> | null;
     created_at: string;
     updated_at: string | null;
 }
@@ -146,4 +147,19 @@ export interface SearchMatch {
 export interface SearchResponse {
   query: string;
   results: SearchMatch[];
+}
+
+// RAG Query types
+export interface RagQueryRequest {
+  query: string;
+}
+
+export interface RagQuerySource {
+  note_id?: number;
+  [key: string]: unknown;
+}
+
+export interface RagQueryResponse {
+  answer: string;
+  sources?: RagQuerySource[];
 } 

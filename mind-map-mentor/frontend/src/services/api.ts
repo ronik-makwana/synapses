@@ -45,6 +45,17 @@ apiClient.interceptors.request.use(
 
 // --- API Service Functions --- //
 
+// Helper to safely extract error messages
+function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    return error.response?.data?.detail || error.message || 'An error occurred';
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'An unknown error occurred';
+}
+
 // Define UserResponse based on User type from @/types
 // Ensure this matches what your /users/me endpoint actually returns
 interface UserResponse extends User {}
@@ -69,9 +80,9 @@ export const loginUser = async (email: string, password: string): Promise<LoginR
       },
     });
     return response.data;
-  } catch (error: any) {
-    console.error('Login API error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'Login failed');
+  } catch (error: unknown) {
+    console.error('Login API error:', error);
+    throw new Error(getErrorMessage(error) || 'Login failed');
   }
 };
 
@@ -80,9 +91,9 @@ export const signupUser = async (email: string, password: string, fullName: stri
   try {
     const response = await apiClient.post<UserResponse>('/users/', { email, password, fullName });
     return response.data;
-  } catch (error: any) {
-    console.error('Signup API error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'Signup failed');
+  } catch (error: unknown) {
+    console.error('Signup API error:', error);
+    throw new Error(getErrorMessage(error) || 'Signup failed');
   }
 };
 
@@ -93,22 +104,23 @@ export const getCurrentUser = async (): Promise<UserResponse | null> => {
     const response = await apiClient.get<UserResponse>('/users/me');
     console.log("getCurrentUser: API call successful, status:", response.status, "Data:", response.data); // Add log
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       console.error(
         `getCurrentUser: Axios error! Status: ${error.response?.status}, ` +
         `Data: ${JSON.stringify(error.response?.data)}, ` +
         `Headers: ${JSON.stringify(error.response?.headers)}`
-      ); // Detailed Axios error log
+      );
       if (error.response?.status === 401) {
         console.log('getCurrentUser: Detected 401 Unauthorized. Returning null.');
         return null;
       }
+      throw new Error(error.response?.data?.detail || 'Failed to fetch user data');
     } else {
-      console.error('getCurrentUser: Non-Axios error:', error.message, error); // Log other errors
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('getCurrentUser: Non-Axios error:', message);
+      throw new Error(message);
     }
-    // Throw error for non-401 cases
-    throw new Error(error.response?.data?.detail || 'Failed to fetch user data');
   }
 };
 
@@ -129,9 +141,9 @@ export const fetchNotes = async (skip: number = 0, limit: number = 100, search: 
     }
     const response = await apiClient.get<NotesPageResponse>('/notes/', { params });
     return response.data; // Return the whole object { items: [], total: number }
-  } catch (error: any) {
-    console.error('Fetch Notes API error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'Failed to fetch notes');
+  } catch (error: unknown) {
+    console.error('Fetch Notes API error:', error);
+    throw new Error(getErrorMessage(error) || 'Failed to fetch notes');
   }
 };
 
@@ -148,9 +160,9 @@ export const createNote = async (noteData: NoteCreatePayload): Promise<Note> => 
   try {
     const response = await apiClient.post<Note>('/notes/', noteData);
     return response.data;
-  } catch (error: any) {
-    console.error('Create Note API error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'Failed to create note');
+  } catch (error: unknown) {
+    console.error('Create Note API error:', error);
+    throw new Error(getErrorMessage(error) || 'Failed to create note');
   }
 };
 
@@ -163,7 +175,7 @@ export const getNoteById = async (noteId: number): Promise<Note> => {
   } catch (error) {
     console.error('Get Note By ID API error:', error);
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.detail || 'Failed to fetch note');
+      throw new Error(error.response.data?.detail || 'Failed to fetch note');
     }
     throw new Error('Failed to fetch note');
   }
@@ -237,9 +249,9 @@ export const fetchGraphNodes = async (skip: number = 0, limit: number = 1000): P
         });
         console.log('Fetched ALL Graph Nodes:', response.data);
         return response.data;
-    } catch (error: any) {
-        console.error('Fetch ALL Graph Nodes API error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.detail || 'Failed to fetch all graph nodes');
+    } catch (error: unknown) {
+        console.error('Fetch ALL Graph Nodes API error:', error);
+        throw new Error(getErrorMessage(error) || 'Failed to fetch all graph nodes');
     }
 };
 
@@ -251,9 +263,9 @@ export const fetchGraphEdges = async (skip: number = 0, limit: number = 1000): P
         });
         console.log('Fetched Graph Edges:', response.data);
         return response.data;
-    } catch (error: any) {
-        console.error('Fetch Graph Edges API error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.detail || 'Failed to fetch graph edges');
+    } catch (error: unknown) {
+        console.error('Fetch Graph Edges API error:', error);
+        throw new Error(getErrorMessage(error) || 'Failed to fetch graph edges');
     }
 };
 
@@ -263,9 +275,9 @@ export const createGraphEdge = async (edgeData: GraphEdgeCreatePayload): Promise
         const response = await apiClient.post<BackendGraphEdge>('/graph/edges/', edgeData);
         console.log('Created Graph Edge:', response.data);
         return response.data;
-    } catch (error: any) {
-        console.error('Create Graph Edge API error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.detail || 'Failed to create graph edge');
+    } catch (error: unknown) {
+        console.error('Create Graph Edge API error:', error);
+        throw new Error(getErrorMessage(error) || 'Failed to create graph edge');
     }
 };
 
@@ -274,9 +286,9 @@ export const deleteGraphEdge = async (edgeId: number): Promise<void> => {
   try {
     const response = await apiClient.delete(`/graph/edges/${edgeId}`);
     console.log('Delete Graph Edge API response status:', response.status);
-  } catch (error: any) {
-    console.error('Delete Graph Edge API error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'Failed to delete graph edge');
+  } catch (error: unknown) {
+    console.error('Delete Graph Edge API error:', error);
+    throw new Error(getErrorMessage(error) || 'Failed to delete graph edge');
   }
 };
 
@@ -287,9 +299,9 @@ export const updateGraphEdge = async (edgeId: number, edgeData: GraphEdgeUpdateP
         const response = await apiClient.put<BackendGraphEdge>(`/graph/edges/${edgeId}`, edgeData);
         console.log('Updated Graph Edge:', response.data);
         return response.data;
-    } catch (error: any) {
-        console.error('Update Graph Edge API error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.detail || 'Failed to update graph edge');
+    } catch (error: unknown) {
+        console.error('Update Graph Edge API error:', error);
+        throw new Error(getErrorMessage(error) || 'Failed to update graph edge');
     }
 };
 
@@ -308,9 +320,9 @@ export const fetchFiles = async (skip: number = 0, limit: number = 100): Promise
             params: { skip, limit },
         });
         return response.data; // Return the whole object { items: [], total: number }
-    } catch (error: any) {
-        console.error('Fetch Files API error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.detail || 'Failed to fetch files');
+    } catch (error: unknown) {
+        console.error('Fetch Files API error:', error);
+        throw new Error(getErrorMessage(error) || 'Failed to fetch files');
     }
 };
 
@@ -330,9 +342,9 @@ export const uploadFile = async (file: File): Promise<ApiFile> => {
         });
         console.log('Uploaded File Response:', response.data);
         return response.data;
-    } catch (error: any) {
-        console.error('Upload File API error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.detail || 'Failed to upload file');
+    } catch (error: unknown) {
+        console.error('Upload File API error:', error);
+        throw new Error(getErrorMessage(error) || 'Failed to upload file');
     }
 };
 
@@ -356,9 +368,9 @@ export const deleteFile = async (fileId: number): Promise<void> => {
     try {
         const response = await apiClient.delete(`/files/${fileId}`);
         console.log('Delete File API response status:', response.status);
-    } catch (error: any) {
-        console.error('Delete File API error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.detail || 'Failed to delete file');
+    } catch (error: unknown) {
+        console.error('Delete File API error:', error);
+        throw new Error(getErrorMessage(error) || 'Failed to delete file');
     }
 };
 
@@ -371,20 +383,17 @@ export const downloadFileApi = async (fileId: number): Promise<Blob> => {
         });
         console.log('Download File API response status:', response.status, 'Type:', response.data.type);
         return response.data; // Return the Blob object
-    } catch (error: any) {
-        console.error('Download File API error:', error.response?.data || error.message);
-        // Attempt to read error detail from blob if possible (might not work reliably)
-        let detail = 'Failed to download file';
-        if (error.response?.data instanceof Blob && error.response.data.type === 'application/json') {
+    } catch (error: unknown) {
+        console.error('Download File API error:', error);
+        let detail = getErrorMessage(error) || 'Failed to download file';
+        if (axios.isAxiosError(error) && error.response?.data instanceof Blob && error.response.data.type === 'application/json') {
             try {
                 const errorJson = JSON.parse(await error.response.data.text());
                 detail = errorJson.detail || detail;
             } catch (parseError) {
                 console.error('Could not parse error blob:', parseError);
             }
-        } else if (error.response?.data?.detail) {
-            detail = error.response.data.detail;
-        } 
+        }
         throw new Error(detail);
     }
 };
@@ -426,9 +435,9 @@ export const searchNotesApi = async (
     });
     console.log('API: Search response received:', response.data);
     return response.data;
-  } catch (error: any) {
-    console.error('Search Notes API error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'Failed to search notes');
+  } catch (error: unknown) {
+    console.error('Search Notes API error:', error);
+    throw new Error(getErrorMessage(error) || 'Failed to search notes');
   }
 };
 
@@ -438,9 +447,9 @@ export const ragQueryApi = async (query: string): Promise<RagQueryResponse> => {
   try {
     const response = await apiClient.post<RagQueryResponse>('/ai/rag-query', requestData);
     return response.data;
-  } catch (error: any) {
-    console.error('RAG Query API error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'Failed to get AI answer');
+  } catch (error: unknown) {
+    console.error('RAG Query API error:', error);
+    throw new Error(getErrorMessage(error) || 'Failed to get AI answer');
   }
 };
 
@@ -462,9 +471,9 @@ export const changePassword = async (currentPassword: string, newPassword: strin
       newPassword,
     });
     return response.data;
-  } catch (error: any) {
-    console.error('Change Password API error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'Failed to change password');
+  } catch (error: unknown) {
+    console.error('Change Password API error:', error);
+    throw new Error(getErrorMessage(error) || 'Failed to change password');
   }
 };
 

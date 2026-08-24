@@ -1,5 +1,6 @@
 // Authentication dependency. Mirrors app/api/deps.py.
 import type { NextFunction, Request, Response } from 'express';
+import type { User } from '../generated/prisma';
 
 import { decodeToken } from '../core/security';
 import * as crudUser from '../crud/user';
@@ -10,7 +11,7 @@ const CREDENTIALS_EXCEPTION = new HttpError(401, 'Could not validate credentials
 });
 
 /** Resolve the current user from the Bearer token and attach it to req.user. */
-async function getCurrentUser(req: Request): Promise<import('@prisma/client').User> {
+async function getCurrentUser(req: Request): Promise<User> {
   const authHeader = req.headers.authorization || '';
   const [scheme, token] = authHeader.split(' ');
   if (scheme !== 'Bearer' || !token) {

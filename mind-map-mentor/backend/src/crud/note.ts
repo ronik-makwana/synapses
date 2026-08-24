@@ -1,5 +1,5 @@
 // Note CRUD + automatic graph linking. Mirrors app/crud/crud_note.py.
-import type { Note, Prisma } from '@prisma/client';
+import type { Note, Prisma } from '../generated/prisma';
 
 import { prisma } from '../db/client';
 import { settings } from '../config';

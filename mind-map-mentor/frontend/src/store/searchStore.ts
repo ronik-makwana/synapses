@@ -33,12 +33,12 @@ export const useSearchStore = create<SearchState>()(
                     // And extract correct graph node IDs for highlighting
                     const sourcesAsSearchResults: SearchMatch[] = [];
                     const nodeIdsToHighlight: string[] = [];
-                    
+
                     // Get the current graph nodes from the graphStore
                     const currentGraphNodes = useGraphStore.getState().nodes;
                     console.debug('[SearchStore] Graph nodes available for mapping:', currentGraphNodes);
 
-                    response.sources.forEach(source => {
+                    (response.sources ?? []).forEach(source => {
                         if (source.note_id) {
                             console.debug(`[SearchStore] Processing source note_id: ${source.note_id}`);
                             // Find the corresponding graph node
@@ -76,9 +76,10 @@ export const useSearchStore = create<SearchState>()(
                         highlightedNodeIds: nodeIdsToHighlight // Update with CORRECT graph node IDs
                     });
 
-                } catch (err: any) {
+                } catch (err: unknown) {
                     console.error("RAG Search error in store:", err);
-                    set({ error: err.message || 'Failed to perform RAG search.', isLoading: false, searchResults: [], highlightedNodeIds: [], ragAnswer: null });
+                    const message = err instanceof Error ? err.message : 'Failed to perform RAG search.';
+                    set({ error: message, isLoading: false, searchResults: [], highlightedNodeIds: [], ragAnswer: null });
                 }
             },
 

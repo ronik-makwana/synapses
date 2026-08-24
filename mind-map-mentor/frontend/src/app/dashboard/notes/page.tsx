@@ -6,7 +6,7 @@ import { fetchNotes, deleteNote, updateNote, createNote } from '@/services/api';
 import { FiChevronLeft, FiChevronRight, FiEdit, FiTrash2, FiSearch, FiPlus } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useGraphStore } from '@/store/graphStore';
-import NoteEditModal from '@/components/modals/NoteEditModal';
+import EditNoteModal from '@/components/notes/EditNoteModal';
 import CreateNoteModal from '@/components/notes/CreateNoteModal';
 import { NoteCreateData } from '@/types';
 
@@ -28,7 +28,7 @@ export default function AllNotesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<number | null>(null);
 
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const lastNoteCreatedTimestamp = useGraphStore((state) => state.lastNoteCreatedTimestamp);
 
   const totalPages = Math.ceil(totalNotes / ITEMS_PER_PAGE);
@@ -376,12 +376,12 @@ export default function AllNotesPage() {
       )}
 
       {isEditModalOpen && editingNote && (
-        <NoteEditModal
-          noteData={editingNote}
+        <EditNoteModal
+          note={editingNote}
           isOpen={isEditModalOpen}
           onClose={closeEditModal}
-          onUpdateNoteDetails={async (updatedData) => {
-            await updateNote(editingNote.id, updatedData);
+          onUpdate={async (noteId, updatedData) => {
+            await updateNote(noteId, updatedData);
             handleUpdateSuccess();
           }}
         />

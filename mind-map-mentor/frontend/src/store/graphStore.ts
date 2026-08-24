@@ -66,10 +66,11 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       ]);
 
       // Process fetchedNodes (which are BackendGraphNode type)
-      const reactFlowNodes: Node<GraphNodeData>[] = fetchedNodes
+      const reactFlowNodes = fetchedNodes
         .map((backendNode) => {
-            // Determine node type and prefix
-            const nodeType = backendNode.node_type as ('note' | 'file'); // Assuming node_type is reliable
+
+            // Determine node type and prefix based on data properties
+            const nodeType = (backendNode.data && 'original_file_id' in backendNode.data) ? 'file' : 'note';
             const reactFlowNodeId = `${nodeType}-${backendNode.id}`;
             const position = backendNode.position ?? { x: Math.random() * 400, y: Math.random() * 400 }; // Use saved pos or default
 
@@ -80,12 +81,13 @@ export const useGraphStore = create<GraphState>((set, get) => ({
                     type: 'note',
                     id: backendNode.id,
                     label: backendNode.label ?? 'Untitled Note',
-                    content: backendNode.data.content, // Assuming content is in data
-                    tags: backendNode.data.tags, // Add tags mapping
+                    content: (backendNode.data.content as string | null) ?? null,
+                    userSummary: (backendNode.data.userSummary as string | null) ?? null,
+                    tags: (backendNode.data.tags as string[] | null) ?? null,
                     created_at: backendNode.created_at,
                     updated_at: backendNode.updated_at,
-                    original_note_id: backendNode.data.original_note_id, // Get original ID from data
-                    position_x: position.x, // Store position in data too
+                    original_note_id: backendNode.data.original_note_id as number,
+                    position_x: position.x,
                     position_y: position.y,
                 } as NoteNodeData;
             } else if (nodeType === 'file' && backendNode.data) {
@@ -115,7 +117,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
                 data: nodeData,
              };
         })
-        .filter((node): node is Node<GraphNodeData> => node !== null); 
+        .filter((node) => node !== null) as Node<GraphNodeData>[]; 
 
       // Map Backend Edges (existing logic should be okay)
       const reactFlowEdges: Edge[] = fetchedEdges.map(edge => {
@@ -134,7 +136,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
           }
 
           // Prepare edge data object including the similarity score
-          const edgeData: { [key: string]: any } = {};
+          const edgeData: Record<string, unknown> = {};
           if (edge.data?.similarity_score !== undefined) {
               edgeData.similarity_score = edge.data.similarity_score;
           }
@@ -146,7 +148,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
               label: edge.label, // Use the label field from the backend
               data: edgeData, // Add the data object with score
           };
-      }).filter((edge): edge is Edge => edge !== null);
+      }).filter((edge) => edge !== null) as Edge[];
 
       set({
         nodes: reactFlowNodes,
@@ -179,11 +181,11 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       position: { x: newNote.position_x ?? 0, y: newNote.position_y ?? 0 },
       data: {
         type: 'note',
-        id: newNote.graph_node_id, // Use GraphNode ID
+        id: newNote.graph_node_id,
         label: newNote.title ?? 'Untitled Note',
-        content: newNote.content,
+        content: newNote.content ?? null,
         created_at: newNote.created_at,
-        updated_at: newNote.updated_at,
+        updated_at: newNote.updated_at ?? null,
         position_x: newNote.position_x,
         position_y: newNote.position_y,
         original_note_id: newNote.id
@@ -201,7 +203,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     set((state) => ({
       nodes: state.nodes.map((node) =>
         node.id === nodeId
-          ? { ...node, data: { ...node.data, ...dataUpdate, updated_at: new Date().toISOString() } } // Update updated_at locally
+          ? { ...node, data: { ...node.data, ...dataUpdate, updated_at: new Date().toISOString() } as GraphNodeData }
           : node
       ),
     }));

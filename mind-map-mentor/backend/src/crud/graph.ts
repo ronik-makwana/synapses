@@ -1,5 +1,5 @@
 // Graph node & edge CRUD. Mirrors app/crud/crud_graph.py.
-import type { GraphNode, GraphEdge, Prisma } from '@prisma/client';
+import type { GraphNode, GraphEdge, Prisma } from '../generated/prisma';
 
 import { prisma } from '../db/client';
 
