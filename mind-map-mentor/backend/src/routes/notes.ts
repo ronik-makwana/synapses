@@ -18,7 +18,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const skip = Number(req.query.skip ?? 0);
     const limit = Number(req.query.limit ?? 100);
-    const [notes, total] = await crudNote.getNotesForUser(req.user!.id, skip, limit);
+    const search = String(req.query.search ?? '');
+    const [notes, total] = await crudNote.getNotesForUser(req.user!.id, skip, limit, search);
     res.json({ items: notes.map(serializeNote), total });
   }),
 );

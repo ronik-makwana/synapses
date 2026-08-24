@@ -4,14 +4,18 @@ import React, { useState } from 'react';
 import { useSearchStore } from '@/store/searchStore'; // Import Zustand store
 import { FiSearch, FiXCircle } from 'react-icons/fi'; // Icons
 
-const QueryPanel: React.FC = () => {
+interface QueryPanelProps {
+  showHeader?: boolean;
+}
+
+const QueryPanel: React.FC<QueryPanelProps> = ({ showHeader = true }) => {
   const [query, setQuery] = useState('');
   // Get RAG state from the store
-  const { 
-      performSearch, 
-      clearSearch, 
-      isLoading, 
-      error, 
+  const {
+      performSearch,
+      clearSearch,
+      isLoading,
+      error,
       searchResults, // Still needed to potentially show sources or for context
       ragAnswer // Get the RAG answer
     } = useSearchStore();
@@ -28,8 +32,8 @@ const QueryPanel: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200 p-4 space-y-4">
-      <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Ask Synapse</h3>
+    <div className="h-full flex flex-col bg-gray-50 p-4 space-y-4">
+      {showHeader && <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Ask Synapse</h3>}
       
       {/* Answer Display Area */}
       <div className="flex-grow overflow-y-auto p-2 bg-white rounded border border-gray-200 min-h-[100px]">

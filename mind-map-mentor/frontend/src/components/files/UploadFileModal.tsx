@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { FiX } from 'react-icons/fi';
 
 interface UploadFileModalProps {
   isOpen: boolean;
@@ -59,8 +60,15 @@ const UploadFileModal: React.FC<UploadFileModalProps> = ({ isOpen, onClose, onUp
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center p-4 backdrop-blur-sm bg-black/10">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-        <div className="mb-6">
+        <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900">Upload New File</h2>
+          <button
+            onClick={handleClose}
+            className="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+            disabled={isUploading}
+          >
+            <FiX className="h-5 w-5" />
+          </button>
         </div>
         
         <div className="space-y-4">

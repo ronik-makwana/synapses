@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import SidePanel from "@/components/layout/SidePanel";
 import QueryPanel from "@/components/ai/QueryPanel"; // Import QueryPanel
 import AuthGuard from '@/components/auth/AuthGuard'; // Corrected path
-import { FiMenu, FiX } from 'react-icons/fi'; // Icons for toggle
+import { FiMessageCircle, FiX } from 'react-icons/fi'; // Icons for toggle
 import clsx from 'clsx'; // For conditional classes
 
 export default function DashboardLayout({
@@ -29,30 +29,37 @@ export default function DashboardLayout({
                 {children}
             </main>
 
-            {/* Right Query Panel */}
-             <div 
-               className={clsx(
-                 'relative flex flex-col flex-shrink-0 border-l border-gray-200 bg-white transition-all duration-300 ease-in-out overflow-hidden', // Ensure overflow-hidden always
-                 isRightPanelOpen ? 'w-80' : 'w-16 items-center justify-center' // Center button vertically+horizontally when collapsed
-               )}
-             >
-               {/* Right Toggle Button Wrapper - Let parent center it when collapsed */} 
-               <div className={clsx("sticky top-0 z-10 p-2", isRightPanelOpen ? "self-start" : "")}>
-                   <button 
-                     onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
-                     className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                     title={isRightPanelOpen ? "Collapse Query Panel" : "Expand Query Panel"}
+            {/* Right Query Panel - Hidden when closed, shows floating button instead */}
+             {isRightPanelOpen && (
+               <div className="w-80 flex-shrink-0 border-l border-gray-200 bg-white flex flex-col animate-in slide-in-from-right duration-150">
+                 {/* Header with Close Button */}
+                 <div className="sticky top-0 z-10 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                   <h2 className="text-lg font-semibold text-gray-900">Ask Synspses</h2>
+                   <button
+                     onClick={() => setIsRightPanelOpen(false)}
+                     className="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                     title="Close"
                    >
-                     {isRightPanelOpen ? <FiX className="h-5 w-5"/> : <FiMenu className="h-5 w-5"/>}
+                     <FiX className="h-5 w-5"/>
                    </button>
+                 </div>
+                 {/* Content Area - Remove internal header from QueryPanel */}
+                 <div className="flex-grow overflow-y-auto">
+                   <QueryPanel showHeader={false} />
+                 </div>
                </div>
-               {/* Content Area: Render ONLY if panel is open */}
-               {isRightPanelOpen && (
-                   <div className={clsx('flex-grow overflow-y-auto')}> {/* QueryPanel has its own padding */} 
-                       <QueryPanel />
-                   </div>
-               )}
-             </div>
+             )}
+
+             {/* Floating Button - Shows when panel is closed */}
+             {!isRightPanelOpen && (
+               <button
+                 onClick={() => setIsRightPanelOpen(true)}
+                 className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-150 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 z-40 animate-in fade-in zoom-in duration-150"
+                 title="Ask Synspses"
+               >
+                 <FiMessageCircle className="h-6 w-6" />
+               </button>
+             )}
         </div>
      </AuthGuard>
   );

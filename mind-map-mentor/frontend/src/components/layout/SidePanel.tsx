@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Node } from 'reactflow';
-import { createNote, updateNote, uploadFile, deleteFile, downloadFileApi } from '@/services/api';
-import { Note, NoteUpdateData, ApiFile, GraphNodeData, NoteCreateData } from '@/types';
+import { updateNote, uploadFile, deleteFile, downloadFileApi } from '@/services/api';
+import { Note, NoteUpdateData, ApiFile, GraphNodeData } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useGraphStore } from '@/store/graphStore';
 import EditNoteModal from '@/components/notes/EditNoteModal';
@@ -14,16 +14,13 @@ import toast from 'react-hot-toast';
 import {
   FiDownload,
   FiTrash2,
-  FiPlusCircle,
   FiUpload,
   FiGrid,
   FiFileText,
-  FiFolder,
   FiLock,
   FiLogOut,
 } from 'react-icons/fi';
 
-import CreateNoteModal from '@/components/notes/CreateNoteModal';
 import UploadFileModal from '@/components/files/UploadFileModal';
 
 const SidePanel: React.FC = () => {
@@ -99,9 +96,7 @@ const SidePanel: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isDownloading, setIsDownloading] = useState<number | null>(null);
 
-  const [isCreateNoteModalOpen, setIsCreateNoteModalOpen] = useState(false);
   const [isUploadFileModalOpen, setIsUploadFileModalOpen] = useState(false);
-  const [isLoadingCreateNote, setIsLoadingCreateNote] = useState(false);
   const [isLoadingUploadFile, setIsLoadingUploadFile] = useState(false);
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -181,27 +176,8 @@ const SidePanel: React.FC = () => {
     }
   };
 
-  const openCreateNoteModal = () => setIsCreateNoteModalOpen(true);
-  const closeCreateNoteModal = () => setIsCreateNoteModalOpen(false);
   const openUploadFileModal = () => setIsUploadFileModalOpen(true);
   const closeUploadFileModal = () => setIsUploadFileModalOpen(false);
-
-  const handleCreateNoteSubmit = async (data: NoteCreateData) => {
-    setIsLoadingCreateNote(true);
-    try {
-      console.log('SidePanel: Calling createNote API with:', data);
-      const newNote = await createNote(data);
-      console.log('SidePanel: Note created successfully:', newNote);
-      console.log('SidePanel: Refetching graph data after note creation...');
-      await fetchGraphData();
-      console.log('SidePanel: Graph data refetch complete.');
-    } catch (error) {
-      console.error('SidePanel: Failed to create note:', error);
-      throw error;
-    } finally {
-      setIsLoadingCreateNote(false);
-    }
-  };
 
   const handleFileUploadSubmit = async (file: File) => {
     setIsLoadingUploadFile(true);
@@ -252,7 +228,7 @@ const SidePanel: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Top Section: App Logo and Navigation */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-200">
+      <div className="flex-shrink-0 p-4">
         {/* App Logo */}
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-indigo-600">Synapse</h1>
@@ -295,17 +271,6 @@ const SidePanel: React.FC = () => {
 
       {/* Middle Section: Action Buttons and Scrollable Content */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        {/* Action Buttons */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200">
-          <button
-            onClick={openCreateNoteModal}
-            className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            disabled={isLoadingCreateNote}
-          >
-            <FiPlusCircle className="mr-2 h-5 w-5" />
-            Create Note
-          </button>
-        </div>
 
         {/* Scrollable Content Area (can be expanded for notes/files lists) */}
         <div className="flex-1 overflow-y-auto p-4">
@@ -355,14 +320,6 @@ const SidePanel: React.FC = () => {
       </div>
 
       {/* Modals */}
-      {isCreateNoteModalOpen && (
-        <CreateNoteModal
-          isOpen={isCreateNoteModalOpen}
-          onClose={closeCreateNoteModal}
-          onCreate={handleCreateNoteSubmit}
-        />
-      )}
-
       {isUploadFileModalOpen && (
         <UploadFileModal
           isOpen={isUploadFileModalOpen}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { changePassword } from '@/services/api';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiX } from 'react-icons/fi';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -94,8 +94,15 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center p-4 backdrop-blur-sm bg-black/10">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-        <div className="mb-4">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+            disabled={isSubmitting}
+          >
+            <FiX className="h-5 w-5" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit}>

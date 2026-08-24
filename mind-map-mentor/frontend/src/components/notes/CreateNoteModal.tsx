@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { NoteCreateData } from '@/types';
 import toast from 'react-hot-toast';
-import clsx from 'clsx'; // Import clsx for conditional classes
-import { FiInfo } from 'react-icons/fi'; // Import info icon
+import clsx from 'clsx';
+import { FiInfo, FiX } from 'react-icons/fi';
 
 interface CreateNoteModalProps {
   isOpen: boolean;
@@ -50,25 +50,27 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
     }
 
     setIsSubmitting(true);
-    const toastId = toast.loading('Creating note...');
+    const toastId = toast.loading('Creating note...', {
+      duration: Infinity, // Keep loading toast visible indefinitely
+    });
 
     const noteData: NoteCreateData = {
       title: title.trim(),
-      content: content.trim() || null, // Send null if empty
-      userSummary: userSummary.trim() || null, // Add user summary
+      content: content.trim() || null,
+      userSummary: userSummary.trim() || null,
     };
 
     try {
       await onCreate(noteData);
-      toast.success('Note created successfully!', { id: toastId });
+      toast.success('Note created successfully!', { id: toastId, duration: 3000 });
       onClose();
-    } catch (error: unknown) { // Use unknown instead of any
+    } catch (error: unknown) {
       console.error("Create note error in modal:", error);
       let errorMessage = 'Failed to create note.';
       if (error instanceof Error) {
           errorMessage = error.message;
       }
-      toast.error(errorMessage, { id: toastId });
+      toast.error(errorMessage, { id: toastId, duration: 3000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -82,8 +84,15 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center p-4 backdrop-blur-sm bg-black/10">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-        <div className="mb-4">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Create New Note</h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+            disabled={isSubmitting}
+          >
+            <FiX className="h-5 w-5" />
+          </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">

@@ -44,15 +44,27 @@ export async function getNotesForUser(
   userId: number,
   skip = 0,
   limit = 100,
+  search?: string,
 ): Promise<[Note[], number]> {
+  const whereClause: Prisma.NoteWhereInput = { userId };
+
+  if (search && search.trim()) {
+    const searchTerm = search.trim();
+    whereClause.OR = [
+      { title: { contains: searchTerm, mode: 'insensitive' } },
+      { content: { contains: searchTerm, mode: 'insensitive' } },
+      { userSummary: { contains: searchTerm, mode: 'insensitive' } },
+    ];
+  }
+
   const [notes, total] = await Promise.all([
     prisma.note.findMany({
-      where: { userId },
+      where: whereClause,
       orderBy: { updatedAt: { sort: 'desc', nulls: 'last' } },
       skip,
       take: limit,
     }),
-    prisma.note.count({ where: { userId } }),
+    prisma.note.count({ where: whereClause }),
   ]);
   return [notes, total];
 }
@@ -133,32 +145,40 @@ export async function createNote(input: NoteCreateInput, userId: number): Promis
     return created;
   });
 
-  // 2. Post-commit best-effort work (matches the Python ordering:
-  // edges against existing vectors → tag generation → this note's upsert).
-  if (note.userSummary) {
-    await findAndCreateSimilarNoteEdges(note, userId, SIMILARITY_THRESHOLD_SUMMARY);
-  }
-
-  let tags: string[] = [];
-  try {
-    tags = await suggestTagsForContent(note.content);
-    if (note.graphNodeId != null) {
-      await crudGraph.updateGraphNodeTags(note.graphNodeId, tags, userId);
+  // 2. Post-commit best-effort work runs in background (don't await to keep API fast)
+  setImmediate(async () => {
+    // Find and create similar note edges
+    if (note.userSummary) {
+      try {
+        await findAndCreateSimilarNoteEdges(note, userId, SIMILARITY_THRESHOLD_SUMMARY);
+      } catch (err) {
+        console.error(`Failed to create similar note edges for note ${note.id}:`, err);
+      }
     }
-  } catch (err) {
-    console.error(`Failed to generate/store AI tags for note ${note.id}:`, err);
-  }
 
-  try {
-    await upsertDocument(
-      note.id,
-      note.content || '',
-      { note_id: note.id, user_id: userId, title: note.title, type: 'note', tags },
-      note.userSummary,
-    );
-  } catch (err) {
-    console.error(`Failed to submit note ${note.id} for embedding/upsert:`, err);
-  }
+    // Generate AI tags
+    let tags: string[] = [];
+    try {
+      tags = await suggestTagsForContent(note.content);
+      if (note.graphNodeId != null) {
+        await crudGraph.updateGraphNodeTags(note.graphNodeId, tags, userId);
+      }
+    } catch (err) {
+      console.error(`Failed to generate/store AI tags for note ${note.id}:`, err);
+    }
+
+    // Upsert to vector store
+    try {
+      await upsertDocument(
+        note.id,
+        note.content || '',
+        { note_id: note.id, user_id: userId, title: note.title, type: 'note', tags },
+        note.userSummary,
+      );
+    } catch (err) {
+      console.error(`Failed to submit note ${note.id} for embedding/upsert:`, err);
+    }
+  });
 
   return note;
 }

@@ -120,12 +120,14 @@ interface NotesPageResponse {
   total: number;
 }
 
-// Fetch Notes for current user (paginated)
-export const fetchNotes = async (skip: number = 0, limit: number = 100): Promise<NotesPageResponse> => {
+// Fetch Notes for current user (paginated with optional search)
+export const fetchNotes = async (skip: number = 0, limit: number = 100, search: string = ''): Promise<NotesPageResponse> => {
   try {
-    const response = await apiClient.get<NotesPageResponse>('/notes/', {
-      params: { skip, limit },
-    });
+    const params: any = { skip, limit };
+    if (search.trim()) {
+      params.search = search.trim();
+    }
+    const response = await apiClient.get<NotesPageResponse>('/notes/', { params });
     return response.data; // Return the whole object { items: [], total: number }
   } catch (error: any) {
     console.error('Fetch Notes API error:', error.response?.data || error.message);

@@ -104,8 +104,15 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ isOpen, onClose, noteData
       className="fixed inset-0 z-50 flex justify-center items-center p-4 backdrop-blur-sm bg-black/10" 
     >
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 overflow-hidden">
-        <div className="mb-4">
+        <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Edit Note</h2>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+              disabled={isSaving}
+            >
+              <FiX className="h-5 w-5" />
+            </button>
         </div>
         
         {error && (
@@ -155,7 +162,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ isOpen, onClose, noteData
             </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-4">
             <label htmlFor="noteContent" className="block text-sm font-medium text-gray-700 mb-1">
               Content
             </label>
@@ -168,6 +175,33 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ isOpen, onClose, noteData
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-gray-900 resize-none"
               disabled={isSaving}
             />
+          </div>
+
+          {/* Tags Section */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+            <div className="flex flex-wrap gap-2 min-h-[2rem] items-center p-3 bg-gray-50 rounded-md border border-gray-200">
+              {(displayTags && displayTags.length > 0) ? (
+                displayTags.map((tag: string, index: number) => (
+                  <span
+                    key={`${tag}-${index}`}
+                    className="inline-flex items-center bg-sky-100 text-sky-800 text-xs font-medium pl-2.5 pr-1 py-0.5 rounded"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTag(tag)}
+                      disabled={isSaving}
+                      className="flex-shrink-0 ml-1 inline-flex text-sky-400 hover:text-sky-600 disabled:opacity-50"
+                    >
+                      <FiX className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <p className="text-xs text-gray-500">No tags yet</p>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3 border-t border-gray-200 pt-4 mt-6">
@@ -188,31 +222,6 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ isOpen, onClose, noteData
             </button>
           </div>
         </form>
-
-        <div className="mt-6 pt-4 border-t border-gray-200">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-          <div className="flex flex-wrap gap-2 min-h-[2rem] items-center">
-            {(displayTags && displayTags.length > 0) ? (
-              displayTags.map((tag: string, index: number) => (
-                <span 
-                  key={`${tag}-${index}`}
-                  className="inline-flex items-center bg-sky-100 text-sky-800 text-xs font-medium pl-2.5 pr-1 py-0.5 rounded"
-                >
-                  {tag}
-                  <button 
-                    onClick={() => handleDeleteTag(tag)}
-                    className="ml-1.5 text-sky-600 hover:text-sky-800 hover:bg-sky-200 rounded-full p-0.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                    aria-label={`Remove tag ${tag}`}
-                  >
-                    <FiX className="w-3 h-3" />
-                  </button>
-                </span>
-              ))
-            ) : (
-              <p className="text-xs text-gray-400 italic">No tags assigned.</p>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
