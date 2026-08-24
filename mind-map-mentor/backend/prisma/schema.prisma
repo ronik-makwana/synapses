@@ -13,7 +13,7 @@ datasource db {
 model User {
   id             Int         @id @default(autoincrement())
   email          String      @unique
-  fullName       String?     @map("full_name")
+  fullName       String      @map("full_name")
   hashedPassword String      @map("hashed_password")
   isActive       Boolean     @default(true) @map("is_active")
   createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)

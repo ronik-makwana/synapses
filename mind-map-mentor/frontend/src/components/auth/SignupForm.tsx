@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'; // Import toast
 import Link from 'next/link'; // Import Link
 
 const SignupForm: React.FC = () => {
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,11 +26,16 @@ const SignupForm: React.FC = () => {
       return;
     }
 
+    if (!fullName.trim()) {
+      setError('Full name is required.');
+      return;
+    }
+
     setIsLoading(true);
-    console.log('Attempting signup with:', { email }); // Don't log password
+    console.log('Attempting signup with:', { email, fullName }); // Don't log password
 
     try {
-      await signupUser(email, password);
+      await signupUser(email, password, fullName);
       setSuccess(true);
       console.log('Signup successful. Redirecting to login...');
       // Don't clear form, show success message briefly then redirect
@@ -57,6 +63,18 @@ const SignupForm: React.FC = () => {
         <p className="text-center text-green-600">Signup successful! You can now log in.</p>
       ) : (
         <>
+          <div>
+            <label htmlFor="signup-fullname" className="block text-sm font-medium text-gray-700">Full Name</label>
+            <input
+              id="signup-fullname"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm bg-white text-gray-900"
+              placeholder="John Doe"
+            />
+          </div>
           <div>
             <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700">Email</label>
             <input

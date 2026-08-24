@@ -76,9 +76,9 @@ export const loginUser = async (email: string, password: string): Promise<LoginR
 };
 
 // Signup User
-export const signupUser = async (email: string, password: string): Promise<UserResponse> => {
+export const signupUser = async (email: string, password: string, fullName: string): Promise<UserResponse> => {
   try {
-    const response = await apiClient.post<UserResponse>('/users/', { email, password });
+    const response = await apiClient.post<UserResponse>('/users/', { email, password, fullName });
     return response.data;
   } catch (error: any) {
     console.error('Signup API error:', error.response?.data || error.message);
