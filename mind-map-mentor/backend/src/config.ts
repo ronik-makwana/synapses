@@ -18,7 +18,7 @@ const envSchema = z.object({
   PINECONE_ENVIRONMENT: z.string().min(1),
   PINECONE_INDEX_NAME: z.string().min(1),
 
-  OPENAI_API_KEY: z.string().optional(),
+  GOOGLE_API_KEY: z.string().min(1),
 
   SIMILARITY_THRESHOLD: z.coerce.number().default(0.5),
   SIMILARITY_THRESHOLD_SUMMARY: z.coerce.number().default(0.5),
@@ -54,7 +54,7 @@ export const settings = {
   PINECONE_API_KEY: parsed.PINECONE_API_KEY ?? '',
   PINECONE_ENVIRONMENT: parsed.PINECONE_ENVIRONMENT ?? '',
   PINECONE_INDEX_NAME: parsed.PINECONE_INDEX_NAME ?? '',
-  OPENAI_API_KEY: parsed.OPENAI_API_KEY ?? '',
+  GOOGLE_API_KEY: parsed.GOOGLE_API_KEY ?? '',
   SIMILARITY_THRESHOLD: parsed.SIMILARITY_THRESHOLD,
   SIMILARITY_THRESHOLD_SUMMARY: parsed.SIMILARITY_THRESHOLD_SUMMARY,
   SIMILARITY_THRESHOLD_CONTENT: parsed.SIMILARITY_THRESHOLD_CONTENT,

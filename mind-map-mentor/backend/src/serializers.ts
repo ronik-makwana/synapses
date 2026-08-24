@@ -11,6 +11,7 @@ export function serializeUser(u: User) {
   return {
     id: u.id,
     email: u.email,
+    full_name: u.fullName,
     is_active: u.isActive,
     created_at: iso(u.createdAt),
   };

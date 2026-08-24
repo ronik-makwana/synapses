@@ -1,5 +1,5 @@
 // Retrieval-Augmented Generation. Mirrors app/ai/rag.py.
-import { ChatOpenAI } from '@langchain/openai';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 
 import { settings } from '../config';
 import { querySimilarNotes, type SimilarNote } from './vectorstore';
@@ -46,10 +46,10 @@ export async function generateRagAnswer(query: string, userId: number): Promise<
         `;
 
     // 3. Invoke the LLM.
-    const llm = new ChatOpenAI({
-      model: 'gpt-4o-mini',
+    const llm = new ChatGoogleGenerativeAI({
+      model: 'gemini-3.6-flash',
       temperature: 0.2,
-      apiKey: settings.OPENAI_API_KEY,
+      apiKey: settings.GOOGLE_API_KEY,
     });
     const response = await llm.invoke(prompt);
     const answer =

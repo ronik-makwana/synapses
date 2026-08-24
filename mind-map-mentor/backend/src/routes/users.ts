@@ -19,7 +19,7 @@ router.post(
     if (existing) {
       throw new HttpError(400, 'The user with this email already exists in the system.');
     }
-    const user = await crudUser.createUser(body.email, body.password);
+    const user = await crudUser.createUser(body.email, body.password, body.fullName);
     res.status(201).json(serializeUser(user));
   }),
 );

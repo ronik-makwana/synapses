@@ -1,5 +1,5 @@
 // LLM tag suggestion. Mirrors app/ai/agents/organizer.py.
-import { ChatOpenAI } from '@langchain/openai';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 
 import { settings } from '../config';
 
@@ -12,16 +12,16 @@ export async function suggestTagsForContent(content: string): Promise<string[]> 
   if (!content || !content.trim()) {
     return [];
   }
-  if (!settings.OPENAI_API_KEY) {
-    console.error('OPENAI_API_KEY not configured. Cannot suggest tags.');
+  if (!settings.GOOGLE_API_KEY) {
+    console.error('GOOGLE_API_KEY not configured. Cannot suggest tags.');
     return [];
   }
 
   try {
-    const llm = new ChatOpenAI({
-      model: 'gpt-4o-mini',
+    const llm = new ChatGoogleGenerativeAI({
+      model: 'gemini-3.6-flash',
       temperature: 0.2,
-      apiKey: settings.OPENAI_API_KEY,
+      apiKey: settings.GOOGLE_API_KEY,
     });
 
     const prompt = `Analyze the following text and extract the 3 to 5 most relevant and concise keywords or tags.

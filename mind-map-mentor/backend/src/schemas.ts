@@ -5,6 +5,7 @@ import { z } from 'zod';
 export const userCreateSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  fullName: z.string(),
 });
 
 export const noteCreateSchema = z.object({
