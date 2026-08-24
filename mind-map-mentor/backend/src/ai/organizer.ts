@@ -12,10 +12,6 @@ export async function suggestTagsForContent(content: string): Promise<string[]> 
   if (!content || !content.trim()) {
     return [];
   }
-  if (!settings.GOOGLE_API_KEY) {
-    console.error('GOOGLE_API_KEY not configured. Cannot suggest tags.');
-    return [];
-  }
 
   try {
     const llm = new ChatGoogleGenerativeAI({

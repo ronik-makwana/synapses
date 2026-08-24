@@ -1,64 +1,154 @@
-// Application configuration, loaded and validated from environment variables.
-// Mirrors app/core/config.py.
-import dotenv from 'dotenv';
-import { z } from 'zod';
+import "dotenv/config";
+import { z } from "zod";
 
-dotenv.config();
+const configSchema = z.object({
+  // ============================================================
+  // PostgreSQL
+  // ============================================================
 
-const envSchema = z.object({
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z
+    .string()
+    .min(1, "DATABASE_URL is required")
+    .url("DATABASE_URL must be a valid URL"),
 
-  SECRET_KEY: z.string().min(1),
-  ALGORITHM: z.string().default('HS256'),
-  ACCESS_TOKEN_EXPIRE_MINUTES: z.coerce.number().default(10080),
+  // ============================================================
+  // JWT
+  // ============================================================
 
-  FILE_STORAGE_PATH: z.string().default('./storage'),
+  SECRET_KEY: z.string().min(32, "SECRET_KEY must be at least 32 characters"),
 
-  PINECONE_API_KEY: z.string().min(1),
-  PINECONE_ENVIRONMENT: z.string().min(1),
-  PINECONE_INDEX_NAME: z.string().min(1),
+  ALGORITHM: z.string().min(1, "ALGORITHM is required"),
 
-  GOOGLE_API_KEY: z.string().min(1),
+  ACCESS_TOKEN_EXPIRE_MINUTES: z.coerce
+    .number()
+    .int()
+    .positive("ACCESS_TOKEN_EXPIRE_MINUTES must be greater than 0"),
 
-  SIMILARITY_THRESHOLD: z.coerce.number().default(0.5),
-  SIMILARITY_THRESHOLD_SUMMARY: z.coerce.number().default(0.5),
-  SIMILARITY_THRESHOLD_CONTENT: z.coerce.number().default(0.5),
+  // ============================================================
+  // Pinecone
+  // ============================================================
 
-  PORT: z.coerce.number().default(8000),
+  PINECONE_API_KEY: z.string().min(1, "PINECONE_API_KEY is required"),
+
+  PINECONE_ENVIRONMENT: z.string().min(1, "PINECONE_ENVIRONMENT is required"),
+
+  PINECONE_CLOUD: z.enum(["aws", "gcp", "azure"], {
+    errorMap: () => ({
+      message: "PINECONE_CLOUD must be aws, gcp, or azure",
+    }),
+  }),
+
+  PINECONE_INDEX_NAME: z.string().min(1, "PINECONE_INDEX_NAME is required"),
+
+  // ============================================================
+  // Google Gemini
+  // ============================================================
+
+  GOOGLE_API_KEY: z.string().min(1, "GOOGLE_API_KEY is required"),
+
+  // ============================================================
+  // File Storage
+  // ============================================================
+
+  FILE_STORAGE_PATH: z.string().min(1, "FILE_STORAGE_PATH is required"),
+
+  // ============================================================
+  // Similarity thresholds
+  // ============================================================
+
+  SIMILARITY_THRESHOLD: z.coerce
+    .number()
+    .min(0, "SIMILARITY_THRESHOLD must be >= 0")
+    .max(1, "SIMILARITY_THRESHOLD must be <= 1"),
+
+  SIMILARITY_THRESHOLD_SUMMARY: z.coerce
+    .number()
+    .min(0, "SIMILARITY_THRESHOLD_SUMMARY must be >= 0")
+    .max(1, "SIMILARITY_THRESHOLD_SUMMARY must be <= 1"),
+
+  SIMILARITY_THRESHOLD_CONTENT: z.coerce
+    .number()
+    .min(0, "SIMILARITY_THRESHOLD_CONTENT must be >= 0")
+    .max(1, "SIMILARITY_THRESHOLD_CONTENT must be <= 1"),
+
+  // ============================================================
+  // Server
+  // ============================================================
+
+  PORT: z.coerce
+    .number()
+    .int()
+    .min(1, "PORT must be between 1 and 65535")
+    .max(65535, "PORT must be between 1 and 65535"),
+
+  // ============================================================
+  // CORS
+  // ============================================================
+
+  CORS_ORIGINS: z
+    .string()
+    .min(1, "CORS_ORIGINS is required")
+    .transform((value) =>
+      value
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    ),
 });
 
-// In test mode we relax required external-service keys so the suite can run
-// without real credentials (the AI layer is mocked in tests).
-const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+const result = configSchema.safeParse(process.env);
 
-const parsed = isTest
-  ? envSchema.partial({
-      PINECONE_API_KEY: true,
-      PINECONE_ENVIRONMENT: true,
-      PINECONE_INDEX_NAME: true,
-    }).parse({
-      SECRET_KEY: process.env.SECRET_KEY || 'test-secret-key',
-      DATABASE_URL:
-        process.env.DATABASE_URL ||
-        'postgresql://user:password@localhost:5432/mindmapdb',
-      ...process.env,
-    })
-  : envSchema.parse(process.env);
+if (!result.success) {
+  console.error("\n❌ Invalid environment variables:\n");
 
+  for (const issue of result.error.issues) {
+    const variable = issue.path.join(".");
+
+    console.error(`  ${variable}: ${issue.message}`);
+  }
+
+  console.error("\n❌ Server startup aborted.\n");
+
+  process.exit(1);
+}
+
+const config = result.data;
+
+/**
+ * Application configuration.
+ *
+ * All environment variables should be accessed through
+ * this object instead of process.env throughout the application.
+ */
 export const settings = {
-  DATABASE_URL: parsed.DATABASE_URL,
-  SECRET_KEY: parsed.SECRET_KEY,
-  ALGORITHM: parsed.ALGORITHM,
-  ACCESS_TOKEN_EXPIRE_MINUTES: parsed.ACCESS_TOKEN_EXPIRE_MINUTES,
-  FILE_STORAGE_PATH: parsed.FILE_STORAGE_PATH,
-  PINECONE_API_KEY: parsed.PINECONE_API_KEY ?? '',
-  PINECONE_ENVIRONMENT: parsed.PINECONE_ENVIRONMENT ?? '',
-  PINECONE_INDEX_NAME: parsed.PINECONE_INDEX_NAME ?? '',
-  GOOGLE_API_KEY: parsed.GOOGLE_API_KEY ?? '',
-  SIMILARITY_THRESHOLD: parsed.SIMILARITY_THRESHOLD,
-  SIMILARITY_THRESHOLD_SUMMARY: parsed.SIMILARITY_THRESHOLD_SUMMARY,
-  SIMILARITY_THRESHOLD_CONTENT: parsed.SIMILARITY_THRESHOLD_CONTENT,
-  PORT: parsed.PORT,
-};
+  // PostgreSQL
+  DATABASE_URL: config.DATABASE_URL,
 
-export type Settings = typeof settings;
+  // JWT
+  SECRET_KEY: config.SECRET_KEY,
+  ALGORITHM: config.ALGORITHM,
+  ACCESS_TOKEN_EXPIRE_MINUTES: config.ACCESS_TOKEN_EXPIRE_MINUTES,
+
+  // Pinecone
+  PINECONE_API_KEY: config.PINECONE_API_KEY,
+  PINECONE_ENVIRONMENT: config.PINECONE_ENVIRONMENT,
+  PINECONE_CLOUD: config.PINECONE_CLOUD,
+  PINECONE_INDEX_NAME: config.PINECONE_INDEX_NAME,
+
+  // Google Gemini
+  GOOGLE_API_KEY: config.GOOGLE_API_KEY,
+
+  // File storage
+  FILE_STORAGE_PATH: config.FILE_STORAGE_PATH,
+
+  // Similarity thresholds
+  SIMILARITY_THRESHOLD: config.SIMILARITY_THRESHOLD,
+  SIMILARITY_THRESHOLD_SUMMARY: config.SIMILARITY_THRESHOLD_SUMMARY,
+  SIMILARITY_THRESHOLD_CONTENT: config.SIMILARITY_THRESHOLD_CONTENT,
+
+  // Server
+  PORT: config.PORT,
+
+  // CORS
+  CORS_ORIGINS: config.CORS_ORIGINS,
+} as const;

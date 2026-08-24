@@ -21,10 +21,6 @@ let vectorStore: PineconeStore | null = null;
 async function getVectorStore(): Promise<PineconeStore> {
   if (vectorStore) return vectorStore;
 
-  if (!settings.PINECONE_API_KEY) {
-    throw new Error('PINECONE_API_KEY not set in environment variables.');
-  }
-
   const pc = new Pinecone({ apiKey: settings.PINECONE_API_KEY });
 
   const indexName = settings.PINECONE_INDEX_NAME;

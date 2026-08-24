@@ -1,17 +1,14 @@
-// Single shared PrismaClient instance (mirrors app/db/session.py).
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "../generated/prisma/client.js";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL environment variable is not set');
-}
+import { settings } from "../config.js";
 
-export const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: databaseUrl,
-    },
-  },
+const adapter = new PrismaPg({
+  connectionString: settings.DATABASE_URL,
 });
 
-export type { Prisma } from '@prisma/client';
+export const prisma = new PrismaClient({
+  adapter,
+});
+
+export type { Prisma } from "../generated/prisma/client.js";
