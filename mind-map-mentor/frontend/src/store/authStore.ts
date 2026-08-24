@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/services/api'; // Import API function
 interface User {
   id: number;
   email: string;
+  full_name: string;
   is_active: boolean;
   created_at: string; // Store as string from API
 }

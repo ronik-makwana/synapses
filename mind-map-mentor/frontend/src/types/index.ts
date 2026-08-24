@@ -62,7 +62,7 @@ interface BaseGraphNodeData {
 }
 
 // Specific data for a note node
-interface NoteNodeData extends BaseGraphNodeData {
+export interface NoteNodeData extends BaseGraphNodeData {
     type: 'note';
     content: string | null;
     userSummary?: string | null; // Added user summary
@@ -72,18 +72,19 @@ interface NoteNodeData extends BaseGraphNodeData {
     updated_at: string | null;
     // You might want to include the original Note object for reference
     original_note_id: number;
-    position_x?: number | null; 
+    position_x?: number | null;
     position_y?: number | null;
 }
 
 // Specific data for a file node
-interface FileNodeData extends BaseGraphNodeData {
+export interface FileNodeData extends BaseGraphNodeData {
     type: 'file';
     filename: string; // Keep original filename for potential use
     mime_type: string | null;
     size: number | null;
     // Include other relevant file fields if needed
     created_at: string;
+    original_file_id: number;
     // You might want to include the original ApiFile object for reference
     // originalFile: ApiFile;
 }

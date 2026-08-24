@@ -25,3 +25,12 @@ export async function authenticateUser(email: string, password: string): Promise
   if (!verifyPassword(password, user.hashedPassword)) return null;
   return user;
 }
+
+export async function updateUserPassword(userId: number, newPassword: string): Promise<User> {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      hashedPassword: getPasswordHash(newPassword),
+    },
+  });
+}

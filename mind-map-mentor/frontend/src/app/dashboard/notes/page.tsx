@@ -186,11 +186,11 @@ export default function AllNotesPage() {
 
       {/* Render Edit Modal */}
       {editingNote && (
-          <NoteEditModal 
-              noteData={editingNote} 
-              isOpen={isEditModalOpen} 
+          <NoteEditModal
+              noteData={editingNote}
+              isOpen={isEditModalOpen}
               onClose={closeEditModal}
-              onSave={async (updatedData) => { 
+              onUpdateNoteDetails={async (updatedData) => {
                   await updateNote(editingNote.id, updatedData);
                   handleUpdateSuccess(); // Close modal and refresh list on success
               }}

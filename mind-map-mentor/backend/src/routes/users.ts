@@ -5,8 +5,9 @@ import * as crudUser from '../crud/user';
 import { getCurrentActiveUser } from '../middleware/auth';
 import { HttpError } from '../errors';
 import { asyncHandler } from '../http';
-import { userCreateSchema } from '../schemas';
+import { userCreateSchema, changePasswordSchema } from '../schemas';
 import { serializeUser } from '../serializers';
+import { verifyPassword } from '../core/security';
 
 const router = Router();
 
@@ -30,6 +31,25 @@ router.get(
   getCurrentActiveUser,
   asyncHandler(async (req, res) => {
     res.json(serializeUser(req.user!));
+  }),
+);
+
+// Change password for current user.
+router.patch(
+  '/me/password',
+  getCurrentActiveUser,
+  asyncHandler(async (req, res) => {
+    const body = changePasswordSchema.parse(req.body);
+    const user = req.user!;
+
+    // Verify current password
+    if (!verifyPassword(body.currentPassword, user.hashedPassword)) {
+      throw new HttpError(400, 'Current password is incorrect');
+    }
+
+    // Update password
+    const updatedUser = await crudUser.updateUserPassword(user.id, body.newPassword);
+    res.json(serializeUser(updatedUser));
   }),
 );
 

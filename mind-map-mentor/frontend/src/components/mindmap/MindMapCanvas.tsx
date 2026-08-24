@@ -33,16 +33,23 @@ import {
     updateFilePosition,
     updateGraphEdge // Import updateGraphEdge
 } from '@/services/api';
-import { 
-    Note as ApiNote, 
+import {
+    Note as ApiNote,
     NoteUpdateData,
     ApiFile,
     GraphNodeData,
     BackendGraphEdge as ApiGraphEdge,
     NoteNodeData,
-    FileNodeData,
-    GraphEdgeUpdatePayload // Import payload type
+    FileNodeData
 } from '@/types';
+
+// Type for edge update payload
+interface GraphEdgeUpdatePayload {
+    source_node_id?: number | null;
+    target_node_id?: number | null;
+    relationship_type?: string | null;
+    data?: { [key: string]: any } | null;
+}
 
 // Import the custom node type
 import NoteNode from './NoteNode';

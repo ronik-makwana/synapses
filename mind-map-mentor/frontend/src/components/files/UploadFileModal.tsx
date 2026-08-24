@@ -59,11 +59,8 @@ const UploadFileModal: React.FC<UploadFileModalProps> = ({ isOpen, onClose, onUp
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center p-4 backdrop-blur-sm bg-black/10">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900">Upload New File</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
-            &times; {/* Close icon */}
-          </button>
         </div>
         
         <div className="space-y-4">

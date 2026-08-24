@@ -82,11 +82,8 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center p-4 backdrop-blur-sm bg-black/10">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Create New Note</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            &times; {/* Close icon */}
-          </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">

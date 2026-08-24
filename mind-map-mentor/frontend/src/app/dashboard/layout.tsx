@@ -12,7 +12,6 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true); // State for right panel
 
   return (
@@ -20,29 +19,9 @@ export default function DashboardLayout({
     <AuthGuard>
         {/* Main flex container for three columns */}
         <div className="flex h-screen overflow-hidden bg-gray-100">
-            {/* Left Side Panel */}
-            <div 
-              className={clsx(
-                'relative flex flex-col flex-shrink-0 border-r border-gray-200 bg-white transition-all duration-300 ease-in-out overflow-hidden', // Ensure overflow-hidden always
-                isLeftPanelOpen ? 'w-72' : 'w-16 items-center justify-center' // Center button vertically+horizontally when collapsed
-              )}
-            >
-              {/* Toggle Button Wrapper - Let parent center it when collapsed */} 
-              <div className={clsx("sticky top-0 z-10 p-2", isLeftPanelOpen ? "self-end" : "")}>
-                  <button 
-                    onClick={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
-                    className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    title={isLeftPanelOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-                  >
-                    {isLeftPanelOpen ? <FiX className="h-5 w-5"/> : <FiMenu className="h-5 w-5"/>}
-                  </button>
-              </div>
-              {/* Content Area: Render ONLY if panel is open */} 
-              {isLeftPanelOpen && (
-                  <div className={clsx('flex-grow p-4')}> 
-                      <SidePanel /> 
-                  </div>
-              )}
+            {/* Left Side Panel - Fixed Width, Non-Collapsible */}
+            <div className="w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col overflow-hidden">
+              <SidePanel />
             </div>
 
             {/* Center Main Content */}

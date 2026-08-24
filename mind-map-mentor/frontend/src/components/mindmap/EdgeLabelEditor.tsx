@@ -63,12 +63,30 @@ const EdgeLabelEditor: FC<EdgeLabelEditorProps> = ({
         );
     }
 
+    // Calculate edge position using getBezierPath
+    const path = getBezierPath({
+        sourceX: (edge as any).sourceX || 0,
+        sourceY: (edge as any).sourceY || 0,
+        sourcePosition: (edge as any).sourcePosition,
+        targetX: (edge as any).targetX || 0,
+        targetY: (edge as any).targetY || 0,
+        targetPosition: (edge as any).targetPosition,
+    });
+
+    // Fallback to center of screen if edge doesn't have position info
+    const midX = (edge as any).sourceX !== undefined && (edge as any).targetX !== undefined
+        ? ((edge as any).sourceX + (edge as any).targetX) / 2
+        : window.innerWidth / 2;
+    const midY = (edge as any).sourceY !== undefined && (edge as any).targetY !== undefined
+        ? ((edge as any).sourceY + (edge as any).targetY) / 2
+        : window.innerHeight / 2;
+
     return (
         <EdgeLabelRenderer>
             <div
                 style={{
                     position: 'absolute',
-                    transform: `translate(-50%, -50%) translate(${(edge.sourceX + edge.targetX) / 2}px, ${(edge.sourceY + edge.targetY) / 2}px)`,
+                    transform: `translate(-50%, -50%) translate(${midX}px, ${midY}px)`,
                     pointerEvents: 'all',
                     zIndex: 1000
                 }}

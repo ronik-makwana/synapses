@@ -136,7 +136,7 @@ export const fetchNotes = async (skip: number = 0, limit: number = 100): Promise
 // Create a new Note
 interface NoteCreatePayload {
   title: string;
-  content: string; // Make content required
+  content?: string | null; // Make content optional/nullable
   userSummary?: string | null; // Add user summary (matches backend)
   position_x?: number;
   position_y?: number;
@@ -439,6 +439,30 @@ export const ragQueryApi = async (query: string): Promise<RagQueryResponse> => {
   } catch (error: any) {
     console.error('RAG Query API error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.detail || 'Failed to get AI answer');
+  }
+};
+
+// --- User Password Management --- //
+
+interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+interface ChangePasswordResponse {
+  message: string;
+}
+
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<ChangePasswordResponse> => {
+  try {
+    const response = await apiClient.patch<ChangePasswordResponse>('/users/me/password', {
+      currentPassword,
+      newPassword,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Change Password API error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'Failed to change password');
   }
 };
 

@@ -10,8 +10,8 @@ interface DashboardLayoutProps {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100">
-      {/* Left Side Panel */}
-      <div className="w-72 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto">
+      {/* Left Sidebar - Fixed Width, Non-collapsible */}
+      <div className="w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
         <SidePanel />
       </div>
 
