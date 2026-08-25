@@ -1,0 +1,95 @@
+// Prisma schema — mirrors the exact Postgres schema the original Alembic
+// migrations produced, so this backend is a drop-in replacement.
+// Prisma fields are camelCase and mapped to the original snake_case columns.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             Int         @id @default(autoincrement())
+  email          String      @unique
+  fullName       String      @map("full_name")
+  hashedPassword String      @map("hashed_password")
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  notes          Note[]
+  files          File[]
+  graphNodes     GraphNode[]
+  graphEdges     GraphEdge[]
+
+  @@map("users")
+}
+
+model Note {
+  id          Int        @id @default(autoincrement())
+  userId      Int        @map("user_id")
+  title       String?
+  content     String     @db.Text
+  positionX   Float?     @map("position_x")
+  positionY   Float?     @map("position_y")
+  graphNodeId Int?       @unique @map("graph_node_id")
+  userSummary String?    @map("user_summary") @db.VarChar(300)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime?  @map("updated_at") @db.Timestamptz(6)
+  user        User       @relation(fields: [userId], references: [id])
+  graphNode   GraphNode? @relation(fields: [graphNodeId], references: [id])
+
+  @@index([userId, updatedAt], map: "ix_notes_user_id_updated_at")
+  @@map("notes")
+}
+
+model File {
+  id          Int        @id @default(autoincrement())
+  userId      Int        @map("user_id")
+  filename    String
+  storagePath String     @unique @map("storage_path")
+  mimeType    String?    @map("mime_type")
+  size        BigInt?
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  graphNodeId Int?       @map("graph_node_id")
+  user        User       @relation(fields: [userId], references: [id])
+  graphNode   GraphNode? @relation(fields: [graphNodeId], references: [id])
+
+  @@map("files")
+}
+
+model GraphNode {
+  id        Int         @id @default(autoincrement())
+  userId    Int         @map("user_id")
+  label     String?
+  nodeType  String      @map("node_type")
+  data      Json?
+  position  Json?
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime?   @map("updated_at") @db.Timestamptz(6)
+  user      User        @relation(fields: [userId], references: [id])
+  note      Note?
+  files     File[]
+  edgesFrom GraphEdge[] @relation("SourceNode")
+  edgesTo   GraphEdge[] @relation("TargetNode")
+
+  @@map("graph_nodes")
+}
+
+model GraphEdge {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @map("user_id")
+  sourceNodeId     Int       @map("source_node_id")
+  targetNodeId     Int       @map("target_node_id")
+  relationshipType String?   @map("relationship_type")
+  label            String?
+  data             Json?
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime? @map("updated_at") @db.Timestamptz(6)
+  user             User      @relation(fields: [userId], references: [id])
+  sourceNode       GraphNode @relation("SourceNode", fields: [sourceNodeId], references: [id])
+  targetNode       GraphNode @relation("TargetNode", fields: [targetNodeId], references: [id])
+
+  @@map("graph_edges")
+}
