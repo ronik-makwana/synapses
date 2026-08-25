@@ -1,5 +1,5 @@
 // File CRUD. Mirrors app/crud/crud_file.py.
-import type { File, GraphNode, Prisma } from '../generated/prisma';
+import type { File, GraphNode, Prisma } from '../../generated/prisma';
 
 import { prisma } from '../db/client';
 import { buildStoragePath } from '../core/storage';

@@ -1,5 +1,5 @@
 // User CRUD. Mirrors app/crud/crud_user.py.
-import type { User } from '../generated/prisma';
+import type { User } from '../../generated/prisma';
 
 import { prisma } from '../db/client';
 import { getPasswordHash, verifyPassword } from '../core/security';

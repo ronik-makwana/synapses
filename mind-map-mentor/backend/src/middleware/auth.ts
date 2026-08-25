@@ -1,6 +1,6 @@
 // Authentication dependency. Mirrors app/api/deps.py.
 import type { NextFunction, Request, Response } from 'express';
-import type { User } from '../generated/prisma';
+import type { User } from '../../generated/prisma';
 
 import { decodeToken } from '../core/security';
 import * as crudUser from '../crud/user';

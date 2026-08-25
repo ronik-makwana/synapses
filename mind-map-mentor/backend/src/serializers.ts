@@ -1,7 +1,7 @@
 // Response serializers — convert Prisma rows into the exact JSON shapes the
 // existing frontend reads (snake_case fields, nested `data`, ISO date strings,
 // and the computed position_x/position_y on graph nodes).
-import type { User, Note, File, GraphNode, GraphEdge } from './generated/prisma';
+import type { User, Note, File, GraphNode, GraphEdge } from '../generated/prisma';
 
 function iso(d: Date | null | undefined): string | null {
   return d ? d.toISOString() : null;
