@@ -34,10 +34,11 @@ export default function AllFilesPage() {
       setFiles(response.items);
       setTotalFiles(response.total); // Use total from response
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load files:", err);
-      setError(err.message || 'Failed to load files.');
-      toast.error(err.message || 'Failed to load files.');
+      const message = err instanceof Error ? err.message : 'Failed to load files.';
+      setError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -82,9 +83,10 @@ export default function AllFilesPage() {
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
       toast.success(`Downloaded ${file.filename}!`, { id: toastId });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("File download error:", err);
-      toast.error(`Download failed: ${err.message}`, { id: toastId });
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Download failed: ${message}`, { id: toastId });
     } finally {
       setIsDownloading(null);
     }
@@ -99,12 +101,13 @@ export default function AllFilesPage() {
       await deleteFile(fileId);
       toast.success('File deleted!', { id: toastId });
       // Refresh the current page after deletion
-      loadFiles(currentPage); 
+      loadFiles(currentPage);
       // TODO: Also need to remove node from graphStore if canvas is open?
       // Maybe call removeFileNode from graphStore here?
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("File delete error:", err);
-      toast.error(`Deletion failed: ${err.message}`, { id: toastId });
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Deletion failed: ${message}`, { id: toastId });
     }
   };
 

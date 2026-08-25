@@ -5,10 +5,9 @@ interface EdgeActionMenuProps {
   left: number;
   onEdit: () => void;
   onDelete: () => void;
-  onClose: () => void; // Optional: If needed to handle close via the component itself
 }
 
-const EdgeActionMenu: FC<EdgeActionMenuProps> = ({ top, left, onEdit, onDelete, onClose }) => {
+const EdgeActionMenu: FC<EdgeActionMenuProps> = ({ top, left, onEdit, onDelete }) => {
   // Simple styling for the popover
   const menuStyle: React.CSSProperties = {
     position: 'absolute',

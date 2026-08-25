@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useState, useCallback, useEffect } from 'react';
+import React, { memo, useState, useCallback } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { useSearchStore } from '@/store/searchStore'; // Import the search store
 import { useGraphStore } from '@/store/graphStore'; // Import graph store for update action

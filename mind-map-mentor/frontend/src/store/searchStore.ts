@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { SearchMatch, SearchResponse, RagQueryResponse } from '@/types'; // Import RAG type
-import { searchNotesApi, ragQueryApi } from '@/services/api'; // Import RAG API call
+import { SearchMatch, RagQueryResponse } from '@/types'; // Import RAG type
+import { ragQueryApi } from '@/services/api'; // Import RAG API call
 import { useGraphStore } from './graphStore'; // Import graph store to access nodes
-import { persist } from 'zustand/middleware'; // If using persistence
+import { useAuthStore } from './authStore'; // Import auth store to get user_id
 
 interface SearchState {
   searchResults: SearchMatch[];
@@ -16,7 +16,7 @@ interface SearchState {
 
 export const useSearchStore = create<SearchState>()(
     // persist( // Uncomment if you want search state persisted
-        (set, get) => ({
+        (set) => ({
             searchResults: [],
             highlightedNodeIds: [],
             isLoading: false,
@@ -38,12 +38,16 @@ export const useSearchStore = create<SearchState>()(
                     const currentGraphNodes = useGraphStore.getState().nodes;
                     console.debug('[SearchStore] Graph nodes available for mapping:', currentGraphNodes);
 
+                    // Get user_id from auth store
+                    const currentUser = useAuthStore.getState().user;
+                    const userId = currentUser?.id ?? 0; // Fallback to 0 if user not available
+
                     (response.sources ?? []).forEach(source => {
                         if (source.note_id) {
                             console.debug(`[SearchStore] Processing source note_id: ${source.note_id}`);
                             // Find the corresponding graph node
                             const matchingGraphNode = currentGraphNodes.find(
-                                node => node.data?.original_note_id === source.note_id
+                                node => node.data?.type === 'note' && node.data?.original_note_id === source.note_id
                             );
 
                             if (matchingGraphNode) {
@@ -54,12 +58,13 @@ export const useSearchStore = create<SearchState>()(
                                 // Add to search results format (using graph node id if preferred)
                                 sourcesAsSearchResults.push({
                                     // Use graph node id if it's more consistent with graph interactions
-                                    id: matchingGraphNode.id, 
+                                    id: matchingGraphNode.id,
                                     score: 0, // RAG sources might not have a score
-                                    metadata: { 
+                                    metadata: {
                                         note_id: source.note_id, // Keep original note_id in metadata
-                                        title: source.title || 'Source Note',
-                                        type: 'note' 
+                                        user_id: userId,
+                                        title: (typeof source.title === 'string' ? source.title : 'Source Note') as string,
+                                        type: 'note' as const
                                     }
                                 });
                             } else {

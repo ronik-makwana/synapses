@@ -1,5 +1,5 @@
 import React, { FC, useState, useCallback, useEffect } from 'react';
-import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, useReactFlow } from 'reactflow';
+import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath } from 'reactflow';
 
 // Custom Edge component to allow inline label editing
 const CustomEdge: FC<EdgeProps> = ({ 
@@ -14,7 +14,6 @@ const CustomEdge: FC<EdgeProps> = ({
     markerEnd, 
     style 
 }) => {
-    const { setEdges } = useReactFlow();
     const [edgePath, labelX, labelY] = getBezierPath({
         sourceX,
         sourceY,

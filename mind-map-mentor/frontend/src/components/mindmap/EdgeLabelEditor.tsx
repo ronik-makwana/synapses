@@ -1,5 +1,5 @@
-import React, { FC, useState, useCallback, useEffect, useRef } from 'react';
-import { EdgeLabelRenderer, getBezierPath, useReactFlow } from 'reactflow';
+import React, { FC, useEffect, useRef } from 'react';
+import { EdgeLabelRenderer, useReactFlow } from 'reactflow';
 
 // Restore props needed for editing
 interface EdgeLabelEditorProps {
@@ -63,22 +63,17 @@ const EdgeLabelEditor: FC<EdgeLabelEditorProps> = ({
         );
     }
 
-    // Calculate edge position using getBezierPath
-    const path = getBezierPath({
-        sourceX: (edge as any).sourceX || 0,
-        sourceY: (edge as any).sourceY || 0,
-        sourcePosition: (edge as any).sourcePosition,
-        targetX: (edge as any).targetX || 0,
-        targetY: (edge as any).targetY || 0,
-        targetPosition: (edge as any).targetPosition,
-    });
-
     // Fallback to center of screen if edge doesn't have position info
-    const midX = (edge as any).sourceX !== undefined && (edge as any).targetX !== undefined
-        ? ((edge as any).sourceX + (edge as any).targetX) / 2
+    const sourceX = (edge as unknown as Record<string, unknown>).sourceX as number | undefined || 0;
+    const targetX = (edge as unknown as Record<string, unknown>).targetX as number | undefined || 0;
+    const sourceY = (edge as unknown as Record<string, unknown>).sourceY as number | undefined || 0;
+    const targetY = (edge as unknown as Record<string, unknown>).targetY as number | undefined || 0;
+
+    const midX = sourceX !== undefined && targetX !== undefined
+        ? (sourceX + targetX) / 2
         : window.innerWidth / 2;
-    const midY = (edge as any).sourceY !== undefined && (edge as any).targetY !== undefined
-        ? ((edge as any).sourceY + (edge as any).targetY) / 2
+    const midY = sourceY !== undefined && targetY !== undefined
+        ? (sourceY + targetY) / 2
         : window.innerHeight / 2;
 
     return (

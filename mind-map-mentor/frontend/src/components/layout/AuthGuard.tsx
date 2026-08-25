@@ -10,7 +10,7 @@ interface AuthGuardProps {
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-  const { token, isLoggedIn, setUser, logout, isHydrated } = useAuthStore();
+  const { token, setUser, logout, isHydrated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();

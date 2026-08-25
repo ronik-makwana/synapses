@@ -5,7 +5,6 @@ import SidePanel from "@/components/layout/SidePanel";
 import QueryPanel from "@/components/ai/QueryPanel"; // Import QueryPanel
 import AuthGuard from '@/components/auth/AuthGuard'; // Corrected path
 import { FiMessageCircle, FiX } from 'react-icons/fi'; // Icons for toggle
-import clsx from 'clsx'; // For conditional classes
 
 export default function DashboardLayout({
   children,

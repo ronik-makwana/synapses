@@ -8,7 +8,7 @@ import {
     NoteNodeData, 
     FileNodeData 
 } from '@/types';
-import { fetchGraphNodes, fetchGraphEdges, updateNote, updateNotePosition, updateFilePosition, createGraphEdge } from '@/services/api'; 
+import { fetchGraphNodes, fetchGraphEdges, updateNote, updateNotePosition, updateFilePosition } from '@/services/api'; 
 
 // Helper function for default positioning (simple random offset)
 const getRandomPosition = (): XYPosition => ({

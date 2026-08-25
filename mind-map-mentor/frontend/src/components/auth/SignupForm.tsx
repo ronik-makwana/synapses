@@ -42,9 +42,10 @@ const SignupForm: React.FC = () => {
       setTimeout(() => {
         router.push('/login'); // Redirect to login page after a short delay
       }, 1500); // 1.5 second delay
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Signup error:', err);
-      toast.error(err.message || 'Signup failed. Please try again.'); // Show error toast
+      const message = err instanceof Error ? err.message : 'Signup failed. Please try again.';
+      toast.error(message); // Show error toast
     } finally {
       setIsLoading(false);
     }

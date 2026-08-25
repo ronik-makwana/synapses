@@ -36,10 +36,11 @@ const LoginForm: React.FC = () => {
       // setUser(currentUser);
       // Routing to dashboard will likely happen in a parent component based on isLoggedIn state
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       // setError(err.message || 'Login failed. Please check credentials.'); // Use toast instead
       console.error('Login error:', err);
-      toast.error(err.message || 'Login failed. Please check credentials.'); // Show error toast
+      const message = err instanceof Error ? err.message : 'Login failed. Please check credentials.';
+      toast.error(message); // Show error toast
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +91,7 @@ const LoginForm: React.FC = () => {
 
       {/* Add link to Signup page */}
       <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-        Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
         <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
           Sign up
         </Link>

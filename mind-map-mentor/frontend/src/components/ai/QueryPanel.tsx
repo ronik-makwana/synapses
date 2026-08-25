@@ -16,7 +16,6 @@ const QueryPanel: React.FC<QueryPanelProps> = ({ showHeader = true }) => {
       clearSearch,
       isLoading,
       error,
-      searchResults, // Still needed to potentially show sources or for context
       ragAnswer // Get the RAG answer
     } = useSearchStore();
 

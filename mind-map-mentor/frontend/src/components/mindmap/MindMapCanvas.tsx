@@ -1,11 +1,10 @@
 'use client'; // Required for hooks like useState, useCallback
 
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
   Background,
-  addEdge,
   applyNodeChanges,
   applyEdgeChanges,
   Node,
@@ -14,31 +13,23 @@ import ReactFlow, {
   EdgeChange,
   Connection,
   BackgroundVariant,
-  useReactFlow, // Import useReactFlow hook
-  EdgeLabelRenderer, // Import EdgeLabelRenderer
-  getBezierPath, // Import getBezierPath
   XYPosition // Import XYPosition
 } from 'reactflow';
 
 import 'reactflow/dist/style.css'; // Import default styles
 
 // Import API service and types
-import { 
-    fetchNotes, 
-    updateNotePosition, 
+import {
+    updateNotePosition,
     updateNote,
-    fetchGraphEdges,
     createGraphEdge,
     deleteGraphEdge,
     updateFilePosition,
     updateGraphEdge // Import updateGraphEdge
 } from '@/services/api';
 import {
-    Note as ApiNote,
     NoteUpdateData,
-    ApiFile,
     GraphNodeData,
-    BackendGraphEdge as ApiGraphEdge,
     NoteNodeData,
     FileNodeData
 } from '@/types';
@@ -48,7 +39,7 @@ interface GraphEdgeUpdatePayload {
     source_node_id?: number | null;
     target_node_id?: number | null;
     relationship_type?: string | null;
-    data?: { [key: string]: any } | null;
+    data?: Record<string, unknown> | null;
 }
 
 // Import the custom node type
@@ -89,7 +80,7 @@ const MindMapCanvas: React.FC = () => {
     deleteEdge: deleteEdgeFromStore, // Use store action
     updateEdge: updateEdgeInStore // Make sure this exists in the store
     // Get files state if needed for handlers, e.g., double-click
-    // files: apiFiles 
+    // files: apiFiles
   } = useGraphStore();
 
   // Local state only for the modal
@@ -288,7 +279,7 @@ const MindMapCanvas: React.FC = () => {
               await updateGraphEdge(backendEdgeId, updatePayload);
               updateEdgeInStore(backendEdgeId, { label: editedEdgeLabel }); // Update store
               toast.success("Edge label updated");
-          } catch (error) {
+          } catch {
               toast.error("Failed to update edge label");
           }
       } 
@@ -327,8 +318,7 @@ const MindMapCanvas: React.FC = () => {
       setMenuPosition(null);
       return;
     }
-    
-    const edgeToDelete = menuEdgeId; // Store before resetting state
+
     setMenuEdgeId(null); // Close menu immediately
     setMenuPosition(null);
 
@@ -478,12 +468,11 @@ const MindMapCanvas: React.FC = () => {
       )}
       {/* Task 4: Conditionally render Edge Action Menu */} 
       {menuEdgeId && menuPosition && (
-          <EdgeActionMenu 
+          <EdgeActionMenu
               top={menuPosition.y}
               left={menuPosition.x}
-              onEdit={handleMenuEdit} 
+              onEdit={handleMenuEdit}
               onDelete={handleMenuDelete}
-              onClose={() => setMenuEdgeId(null)} // Simple close
           />
       )}
     </div>

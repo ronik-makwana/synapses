@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/authStore'; // Import Zustand store
 import {
   Note, NoteUpdateData, User, ApiFile, BackendGraphNode, BackendGraphEdge,
-  SearchResponse, SearchMatch, NoteCreateData, RagQueryRequest, RagQueryResponse
+  SearchResponse, RagQueryRequest, RagQueryResponse
 } from '@/types'; // Import Note, NoteUpdateData, User, File types AND AI types
 
 // Determine Backend URL (adjust if your backend runs elsewhere)
@@ -56,10 +56,6 @@ function getErrorMessage(error: unknown): string {
   return 'An unknown error occurred';
 }
 
-// Define UserResponse based on User type from @/types
-// Ensure this matches what your /users/me endpoint actually returns
-interface UserResponse extends User {}
-
 // Define LoginResponse
 interface LoginResponse {
   access_token: string;
@@ -87,9 +83,9 @@ export const loginUser = async (email: string, password: string): Promise<LoginR
 };
 
 // Signup User
-export const signupUser = async (email: string, password: string, fullName: string): Promise<UserResponse> => {
+export const signupUser = async (email: string, password: string, fullName: string): Promise<User> => {
   try {
-    const response = await apiClient.post<UserResponse>('/users/', { email, password, fullName });
+    const response = await apiClient.post<User>('/users/', { email, password, fullName });
     return response.data;
   } catch (error: unknown) {
     console.error('Signup API error:', error);
@@ -98,10 +94,10 @@ export const signupUser = async (email: string, password: string, fullName: stri
 };
 
 // Get Current User (Corrected)
-export const getCurrentUser = async (): Promise<UserResponse | null> => {
+export const getCurrentUser = async (): Promise<User | null> => {
   console.log("getCurrentUser: Attempting API call to /users/me"); // Add log
   try {
-    const response = await apiClient.get<UserResponse>('/users/me');
+    const response = await apiClient.get<User>('/users/me');
     console.log("getCurrentUser: API call successful, status:", response.status, "Data:", response.data); // Add log
     return response.data;
   } catch (error: unknown) {
@@ -135,7 +131,7 @@ interface NotesPageResponse {
 // Fetch Notes for current user (paginated with optional search)
 export const fetchNotes = async (skip: number = 0, limit: number = 100, search: string = ''): Promise<NotesPageResponse> => {
   try {
-    const params: any = { skip, limit };
+    const params: Record<string, number | string> = { skip, limit };
     if (search.trim()) {
       params.search = search.trim();
     }
@@ -229,7 +225,7 @@ interface GraphEdgeCreatePayload {
     source_node_id: number;
     target_node_id: number;
     relationship_type?: string | null;
-    data?: { [key: string]: any } | null;
+    data?: Record<string, unknown> | null;
 }
 
 // Define the payload for updating an edge (matches backend GraphEdgeUpdate schema)
@@ -238,7 +234,7 @@ interface GraphEdgeUpdatePayload {
     source_node_id?: number | null; // Usually not updated, but included for completeness
     target_node_id?: number | null; // Usually not updated
     relationship_type?: string | null;
-    data?: { [key: string]: any } | null;
+    data?: Record<string, unknown> | null;
 }
 
 // Fetch ALL Graph Nodes (Notes, Files, etc.)
@@ -454,11 +450,6 @@ export const ragQueryApi = async (query: string): Promise<RagQueryResponse> => {
 };
 
 // --- User Password Management --- //
-
-interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-}
 
 interface ChangePasswordResponse {
   message: string;

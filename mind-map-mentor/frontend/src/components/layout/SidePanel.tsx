@@ -1,19 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Node } from 'reactflow';
-import { updateNote, uploadFile, deleteFile, downloadFileApi } from '@/services/api';
-import { Note, NoteUpdateData, ApiFile, GraphNodeData } from '@/types';
+import { updateNote, uploadFile } from '@/services/api';
+import { Note, NoteUpdateData } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useGraphStore } from '@/store/graphStore';
 import EditNoteModal from '@/components/notes/EditNoteModal';
 import ChangePasswordModal from '@/components/auth/ChangePasswordModal';
 import toast from 'react-hot-toast';
 import {
-  FiDownload,
-  FiTrash2,
   FiUpload,
   FiGrid,
   FiFileText,
@@ -26,75 +23,12 @@ import UploadFileModal from '@/components/files/UploadFileModal';
 const SidePanel: React.FC = () => {
   const pathname = usePathname();
   const {
-    nodes: graphNodes,
-    isLoading: isLoadingGraph,
-    error: graphError,
     fetchGraphData,
-    addNoteNode,
     addFileNode,
-    removeFileNode,
   } = useGraphStore();
 
-  const notes = graphNodes
-    .filter(
-      (node): node is Node<
-        GraphNodeData & {
-          original_note_id: number;
-          label: string;
-          content: string;
-          position_x?: number;
-          position_y?: number;
-          created_at: string;
-          updated_at: string;
-        }
-      > => node.data.type === 'note' && typeof (node.data as any).original_note_id === 'number'
-    )
-    .map((node) => {
-      const noteData = node.data;
-      return {
-        id: noteData.original_note_id,
-        user_id: useAuthStore.getState().user?.id ?? 0,
-        title: noteData.label,
-        content: noteData.content,
-        position_x: noteData.position_x,
-        position_y: noteData.position_y,
-        created_at: noteData.created_at,
-        updated_at: noteData.updated_at,
-      } as Note;
-    });
-
-  const filesForPanel = graphNodes
-    .filter(
-      (node): node is Node<
-        GraphNodeData & {
-          original_file_id: number;
-          filename: string;
-          mime_type: string;
-          size: number;
-          created_at: string;
-        }
-      > => node.data.type === 'file' && typeof (node.data as any).original_file_id === 'number'
-    )
-    .map((node) => {
-      const fileData = node.data;
-      return {
-        id: fileData.original_file_id,
-        user_id: useAuthStore.getState().user?.id ?? 0,
-        filename: fileData.filename,
-        mime_type: fileData.mime_type,
-        size: fileData.size,
-        created_at: fileData.created_at,
-      } as ApiFile;
-    });
-
-  const { isLoggedIn, user, logout } = useAuthStore();
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const { user, logout } = useAuthStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDownloading, setIsDownloading] = useState<number | null>(null);
 
   const [isUploadFileModalOpen, setIsUploadFileModalOpen] = useState(false);
   const [isLoadingUploadFile, setIsLoadingUploadFile] = useState(false);
@@ -103,15 +37,11 @@ const SidePanel: React.FC = () => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const openEditModal = (noteToEdit: Note) => {
-    setEditingNote(noteToEdit);
-    setIsEditModalOpen(true);
-  };
-
   const closeEditModal = () => {
     setIsEditModalOpen(false);
-    setEditingNote(null);
   };
+
+  const [editingNote] = useState<Note | null>(null);
 
   const handleUpdateNote = async (noteId: number, data: NoteUpdateData) => {
     console.log('SidePanel: handleUpdateNote called', { noteId, data });
@@ -122,59 +52,17 @@ const SidePanel: React.FC = () => {
       fetchGraphData();
       closeEditModal();
       toast.success('Note updated successfully!', { id: toastId });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('SidePanel: Failed to update note:', error);
-      toast.error(error.message || 'Failed to update note', { id: toastId });
+      const message = error instanceof Error ? error.message : 'Failed to update note';
+      toast.error(message, { id: toastId });
     }
   };
 
   useEffect(() => {
-    if (isLoggedIn) {
-      console.log('SidePanel: Calling fetchGraphData from store.');
-      fetchGraphData();
-    }
-  }, [isLoggedIn, fetchGraphData]);
-
-  const handleDownloadFile = async (file: ApiFile) => {
-    console.log('Attempting to download file:', file.filename, 'ID:', file.id);
-    setIsDownloading(file.id);
-    const toastId = toast.loading(`Downloading ${file.filename}...`);
-    try {
-      const blob = await downloadFileApi(file.id);
-
-      const link = document.createElement('a');
-      const url = window.URL.createObjectURL(blob);
-      link.href = url;
-      link.setAttribute('download', file.filename);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success(`Downloaded ${file.filename}!`, { id: toastId });
-    } catch (err: any) {
-      console.error('File download error:', err);
-      toast.error(`Download failed: ${err.message}`, { id: toastId });
-    } finally {
-      setIsDownloading(null);
-    }
-  };
-
-  const handleDeleteFile = async (fileId: number) => {
-    if (!window.confirm('Are you sure you want to delete this file?')) {
-      return;
-    }
-    console.log('Attempting to delete file (original ID):', fileId);
-    const toastId = toast.loading('Deleting file...');
-    try {
-      await deleteFile(fileId);
-      removeFileNode(fileId);
-      toast.success('File deleted successfully!', { id: toastId });
-    } catch (err: any) {
-      console.error('File deletion error:', err);
-      toast.error(`Deletion failed: ${err.message}`, { id: toastId });
-    }
-  };
+    console.log('SidePanel: Calling fetchGraphData from store.');
+    fetchGraphData();
+  }, [fetchGraphData]);
 
   const openUploadFileModal = () => setIsUploadFileModalOpen(true);
   const closeUploadFileModal = () => setIsUploadFileModalOpen(false);
@@ -185,7 +73,7 @@ const SidePanel: React.FC = () => {
       const uploadedFileRecord = await uploadFile(file);
       addFileNode(uploadedFileRecord);
       closeUploadFileModal();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('File upload error from SidePanel via modal:', err);
       throw err;
     } finally {
@@ -223,7 +111,6 @@ const SidePanel: React.FC = () => {
 
   const isCanvasActive = pathname === '/dashboard';
   const isNotesActive = pathname === '/dashboard/notes';
-  const isFilesActive = pathname === '/dashboard/files';
 
   return (
     <div className="flex flex-col h-full bg-white">

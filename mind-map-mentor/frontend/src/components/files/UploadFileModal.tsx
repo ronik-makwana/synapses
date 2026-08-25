@@ -37,9 +37,10 @@ const UploadFileModal: React.FC<UploadFileModalProps> = ({ isOpen, onClose, onUp
       await onUpload(selectedFile); // Call the onUpload prop passed from parent
       toast.success('File uploaded successfully!', { id: toastId });
       handleClose(); // Close modal on success
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Upload file error in modal:", error);
-      toast.error(error.message || 'Failed to upload file.', { id: toastId });
+      const message = error instanceof Error ? error.message : 'Failed to upload file.';
+      toast.error(message, { id: toastId });
     } finally {
       setIsUploading(false);
     }

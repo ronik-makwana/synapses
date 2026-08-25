@@ -57,9 +57,10 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
       const updateData: NoteUpdateData = { title, content };
       await onUpdate(note.id, updateData); // Call the onUpdate prop passed from SidePanel
       // onClose(); // Closing is handled by SidePanel after successful update
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("EditNoteModal update error:", err);
-      toast.error(err.message || 'Failed to update note.');
+      const message = err instanceof Error ? err.message : 'Failed to update note.';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
