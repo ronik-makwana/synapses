@@ -82,7 +82,6 @@ export const useGraphStore = create<GraphState>((set, get) => ({
                     id: backendNode.id,
                     label: backendNode.label ?? 'Untitled Note',
                     content: (backendNode.data.content as string | null) ?? null,
-                    userSummary: (backendNode.data.userSummary as string | null) ?? null,
                     tags: (backendNode.data.tags as string[] | null) ?? null,
                     created_at: backendNode.created_at,
                     updated_at: backendNode.updated_at,

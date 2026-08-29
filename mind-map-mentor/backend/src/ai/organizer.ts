@@ -5,7 +5,7 @@ import { settings } from '../config';
 
 /** Tags kept per note. The prompt asks for exactly this many so the model is not
  *  paid to produce tags that are then discarded. */
-const MAX_TAGS = 2;
+const MAX_TAGS = 5;
 
 /**
  * Analyze text content with an LLM and return relevant tags.
@@ -26,7 +26,7 @@ export async function suggestTagsForContent(content: string): Promise<string[]> 
     const prompt = `Analyze the following text and extract the ${MAX_TAGS} most relevant and concise keywords or tags.
 Present the tags as a comma-separated list ONLY, with no introductory text or numbering.
 Ensure tags are lowercase.
-Example: artificial intelligence, machine learning
+Example: artificial intelligence, machine learning, neural networks, training data, model evaluation
 
 Text:
 ${content}`;

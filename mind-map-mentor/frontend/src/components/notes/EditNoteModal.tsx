@@ -68,9 +68,9 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
 
   return (
     // Modal Overlay - Use bg-black/50 for semi-transparent background
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ease-in-out">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 transition-opacity duration-300 ease-in-out">
       {/* Modal Content */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto mx-auto">
         <h2 className="text-xl font-semibold mb-4 text-gray-900">Edit Note (ID: {note.id})</h2>
         
         {/* Form Inputs */}
@@ -90,12 +90,30 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
              <label htmlFor="edit-note-content" className="block text-sm font-medium text-gray-700">Content</label>
             <textarea
               id="edit-note-content"
-              rows={4} // Increased rows slightly
+              rows={12}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm bg-white text-gray-900"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm resize-y focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm bg-white text-gray-900"
             />
           </div>
+          {/* Tags are generated in a background pass after a save, so a note saved
+              moments ago has none yet. Hide the section entirely rather than
+              showing an empty one. */}
+          {note.tags && note.tags.length > 0 && (
+            <div>
+              <span className="block text-sm font-medium text-gray-700">Tags</span>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {note.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 text-xs font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
            {error && (
              <p className="text-sm text-red-600">{error}</p>
            )}

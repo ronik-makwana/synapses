@@ -147,7 +147,6 @@ export const fetchNotes = async (skip: number = 0, limit: number = 100, search: 
 interface NoteCreatePayload {
   title: string;
   content?: string | null; // Make content optional/nullable
-  userSummary?: string | null; // Add user summary (matches backend)
   position_x?: number;
   position_y?: number;
 }

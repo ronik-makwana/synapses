@@ -4,10 +4,30 @@ import type { Note, Prisma } from '../../generated/prisma';
 import { prisma } from '../db/client';
 import { settings } from '../config';
 import { suggestTagsForContent } from '../ai/organizer';
-import { upsertDocument, deleteDocument, querySimilarNotes } from '../ai/vectorstore';
+import {
+  upsertDocument,
+  deleteDocument,
+  querySimilarNotes,
+  dedupeBySource,
+} from '../ai/vectorstore';
+import { chunkText } from '../ai/chunking';
 import * as crudGraph from './graph';
 
-const SIMILARITY_THRESHOLD_SUMMARY = settings.SIMILARITY_THRESHOLD_SUMMARY;
+const SIMILARITY_THRESHOLD_CONTENT = settings.SIMILARITY_THRESHOLD_CONTENT;
+
+/** Distinct notes considered as link candidates, once chunk matches are collapsed.
+ *  Caps how many edges a single save can add. */
+const MAX_LINK_CANDIDATES = 6;
+
+/** Chunk-level matches to fetch before collapsing. Content is chunked, so one long
+ *  note can occupy many slots; over-fetch and let `dedupeBySource` reduce it. */
+const LINK_QUERY_TOP_K = 30;
+
+/** Notes are read with their graph node joined so `serializeNote` can surface
+ *  the tags stored in that node's `data`. */
+const WITH_GRAPH_NODE = { graphNode: { select: { data: true } } } as const;
+
+export type NoteWithGraphNode = Prisma.NoteGetPayload<{ include: typeof WITH_GRAPH_NODE }>;
 
 export interface NoteCreateInput {
   title: string;
@@ -36,8 +56,11 @@ export function getRelationshipLabelFromScore(score: number): string {
   return 'Related';
 }
 
-export async function getNote(noteId: number, userId: number): Promise<Note | null> {
-  return prisma.note.findFirst({ where: { id: noteId, userId } });
+export async function getNote(
+  noteId: number,
+  userId: number,
+): Promise<NoteWithGraphNode | null> {
+  return prisma.note.findFirst({ where: { id: noteId, userId }, include: WITH_GRAPH_NODE });
 }
 
 export async function getNotesForUser(
@@ -45,7 +68,7 @@ export async function getNotesForUser(
   skip = 0,
   limit = 100,
   search?: string,
-): Promise<[Note[], number]> {
+): Promise<[NoteWithGraphNode[], number]> {
   const whereClause: Prisma.NoteWhereInput = { userId };
 
   if (search && search.trim()) {
@@ -63,43 +86,57 @@ export async function getNotesForUser(
       orderBy: { updatedAt: { sort: 'desc', nulls: 'last' } },
       skip,
       take: limit,
+      include: WITH_GRAPH_NODE,
     }),
     prisma.note.count({ where: whereClause }),
   ]);
   return [notes, total];
 }
 
-/** Find notes with similar summaries and create edges above the threshold. */
+/** Find notes with similar content and create edges above the threshold. */
 async function findAndCreateSimilarNoteEdges(
   note: Note,
   userId: number,
   threshold: number,
 ): Promise<void> {
-  if (!note.userSummary || !note.userSummary.trim()) return;
   if (note.graphNodeId == null) return;
 
+  // The embedding model caps its input, so a long note cannot be embedded whole.
+  // Notes written through the UI sit well inside a single chunk; anything longer
+  // is linked on its opening chunk rather than not linked at all.
+  const [queryText] = chunkText(note.content ?? '');
+  if (!queryText) return;
+
   try {
-    const results = await querySimilarNotes({
-      queryText: note.userSummary,
+    const matches = await querySimilarNotes({
+      queryText,
       userId,
-      embeddingTypeFilter: 'summary',
-      topK: 6,
+      embeddingTypeFilter: 'content',
+      topK: LINK_QUERY_TOP_K,
+      // Files share the 'content' embedding type but carry no note_id, and would
+      // otherwise crowd genuine candidates out of the result slots.
+      filter: { type: 'note' },
     });
+
+    // Keep each note's best-scoring chunk, drop this note's own vectors (present
+    // when re-linking after an edit), then take the strongest few.
+    const results = dedupeBySource(matches)
+      .filter((match) => match.metadata.note_id !== note.id)
+      .slice(0, MAX_LINK_CANDIDATES);
 
     for (const result of results) {
       const score = result.score;
       const similarNoteId = result.metadata.note_id as number | undefined;
       if (score == null || similarNoteId == null) continue;
-      if (similarNoteId === note.id) continue;
       if (score < threshold) continue;
 
       const similarNote = await getNote(similarNoteId, userId);
       if (!similarNote || similarNote.graphNodeId == null) continue;
 
       const label = getRelationshipLabelFromScore(score);
-      const edgeData = { similarity_score: score, based_on: 'summary' };
+      const edgeData = { similarity_score: score, based_on: 'content' };
 
-      // Linking re-runs whenever a summary changes, so refresh the existing
+      // Linking re-runs whenever the content changes, so refresh the existing
       // edge rather than stacking a duplicate on top of it.
       const existingEdge = await crudGraph.findEdgeBetweenNodes(
         userId,
@@ -186,12 +223,10 @@ export async function createNote(input: NoteCreateInput, userId: number): Promis
   // 2. Post-commit best-effort work runs in background (don't await to keep API fast)
   setImmediate(async () => {
     // Find and create similar note edges
-    if (note.userSummary) {
-      try {
-        await findAndCreateSimilarNoteEdges(note, userId, SIMILARITY_THRESHOLD_SUMMARY);
-      } catch (err) {
-        console.error(`Failed to create similar note edges for note ${note.id}:`, err);
-      }
+    try {
+      await findAndCreateSimilarNoteEdges(note, userId, SIMILARITY_THRESHOLD_CONTENT);
+    } catch (err) {
+      console.error(`Failed to create similar note edges for note ${note.id}:`, err);
     }
 
     // Generate AI tags
@@ -216,7 +251,7 @@ export async function updateNote(
   noteId: number,
   update: NoteUpdateInput,
   userId: number,
-): Promise<Note | null> {
+): Promise<NoteWithGraphNode | null> {
   const existing = await getNote(noteId, userId);
   if (!existing) return null;
 
@@ -286,12 +321,14 @@ export async function updateNote(
     await indexNote(note, userId, (manualTagsProvided ? manualTags : aiGeneratedTags) ?? []);
   }
 
-  // 5. Re-run edge linking if the summary changed.
-  if (summaryUpdated) {
-    await findAndCreateSimilarNoteEdges(note, userId, SIMILARITY_THRESHOLD_SUMMARY);
+  // 5. Re-run edge linking if the content changed.
+  if (contentUpdated) {
+    await findAndCreateSimilarNoteEdges(note, userId, SIMILARITY_THRESHOLD_CONTENT);
   }
 
-  return note;
+  // Re-read so the response carries the tags written above rather than the row
+  // as it looked before they were regenerated.
+  return getNote(noteId, userId);
 }
 
 export async function deleteNote(noteId: number, userId: number): Promise<Note | null> {

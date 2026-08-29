@@ -37,14 +37,12 @@ export interface ApiFile {
 export interface NoteCreateData {
   title: string; // Title is required for creation
   content?: string | null; // Content is optional
-  userSummary?: string | null; // Add user summary
 }
 
 // Data allowed when updating a note
 export interface NoteUpdateData {
   title?: string | null; // Title is optional for update
   content?: string | null; // Content is optional
-  userSummary?: string | null; // Add user summary
   tags?: string[]; // <<< ADDED OPTIONAL TAGS ARRAY FOR UPDATES
   position_x?: number | null; // Position is optional for update
   position_y?: number | null; // Position is optional for update
@@ -66,7 +64,6 @@ interface BaseGraphNodeData {
 export interface NoteNodeData extends BaseGraphNodeData {
     type: 'note';
     content: string | null;
-    userSummary?: string | null; // Added user summary
     tags?: string[] | null; // Add optional tags field
     // Include other relevant note fields if needed for display/interaction
     created_at: string;

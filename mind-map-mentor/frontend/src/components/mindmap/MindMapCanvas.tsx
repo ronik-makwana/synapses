@@ -456,7 +456,6 @@ const MindMapCanvas: React.FC = () => {
                 user_id: 0,
                 title: editingNoteData.label,
                 content: editingNoteData.content,
-                userSummary: editingNoteData.userSummary,
                 tags: editingNoteData.tags ?? undefined,
                 position_x: editingNoteData.position_x,
                 position_y: editingNoteData.position_y,

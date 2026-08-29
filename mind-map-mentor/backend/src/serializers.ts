@@ -17,13 +17,25 @@ export function serializeUser(u: User) {
   };
 }
 
-export function serializeNote(n: Note) {
+/** A note's tags live on its linked graph node's `data` JSON, not on the note
+ *  row, so the node has to be joined in for them to be serialized. */
+function tagsFromNodeData(data: unknown): string[] {
+  if (!data || typeof data !== 'object') return [];
+  const tags = (data as Record<string, unknown>).tags;
+  if (!Array.isArray(tags)) return [];
+  return tags.filter((tag): tag is string => typeof tag === 'string');
+}
+
+export function serializeNote(n: Note & { graphNode?: { data: unknown } | null }) {
   return {
     id: n.id,
     user_id: n.userId,
     title: n.title,
     content: n.content,
     userSummary: n.userSummary ?? null,
+    // [] when the caller did not join the node, or before the background tag
+    // pass has run — never absent, so the client can rely on the field.
+    tags: tagsFromNodeData(n.graphNode?.data),
     position_x: n.positionX ?? 0.0,
     position_y: n.positionY ?? 0.0,
     graph_node_id: n.graphNodeId ?? null,
