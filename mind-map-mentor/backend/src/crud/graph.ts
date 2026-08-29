@@ -163,6 +163,27 @@ export async function getGraphEdgesForUser(
   });
 }
 
+/**
+ * Find an existing edge between two nodes, in either direction.
+ * Automatic linking re-runs on every summary edit, so without this check the
+ * same pair accumulates a duplicate edge (and a mirrored one) each time.
+ */
+export async function findEdgeBetweenNodes(
+  userId: number,
+  nodeAId: number,
+  nodeBId: number,
+): Promise<GraphEdge | null> {
+  return prisma.graphEdge.findFirst({
+    where: {
+      userId,
+      OR: [
+        { sourceNodeId: nodeAId, targetNodeId: nodeBId },
+        { sourceNodeId: nodeBId, targetNodeId: nodeAId },
+      ],
+    },
+  });
+}
+
 export async function createGraphEdge(
   input: GraphEdgeCreateInput,
   userId: number,

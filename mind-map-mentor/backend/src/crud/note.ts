@@ -97,18 +97,56 @@ async function findAndCreateSimilarNoteEdges(
       if (!similarNote || similarNote.graphNodeId == null) continue;
 
       const label = getRelationshipLabelFromScore(score);
+      const edgeData = { similarity_score: score, based_on: 'summary' };
+
+      // Linking re-runs whenever a summary changes, so refresh the existing
+      // edge rather than stacking a duplicate on top of it.
+      const existingEdge = await crudGraph.findEdgeBetweenNodes(
+        userId,
+        note.graphNodeId,
+        similarNote.graphNodeId,
+      );
+      if (existingEdge) {
+        await crudGraph.updateGraphEdge(existingEdge.id, { label, data: edgeData }, userId);
+        continue;
+      }
+
       await crudGraph.createGraphEdge(
         {
           sourceNodeId: note.graphNodeId,
           targetNodeId: similarNote.graphNodeId,
           label,
-          data: { similarity_score: score, based_on: 'summary' },
+          data: edgeData,
         },
         userId,
       );
     }
   } catch (err) {
     console.error(`Error during automatic edge creation for note ${note.id}:`, err);
+  }
+}
+
+/**
+ * Push a note's current content and summary into the vector store.
+ *
+ * The vector store already retries internally; if it still fails the note stays
+ * in Postgres but is absent from search and RAG until it is edited again, so the
+ * failure is logged explicitly rather than swallowed.
+ */
+async function indexNote(note: Note, userId: number, tags: string[]): Promise<void> {
+  try {
+    await upsertDocument(
+      note.id,
+      note.content || '',
+      { note_id: note.id, user_id: userId, title: note.title, type: 'note', tags },
+      note.userSummary,
+    );
+  } catch (err) {
+    console.error(
+      `[vectorstore] Note ${note.id} could not be indexed. It will not appear in ` +
+        'semantic search or RAG answers until it is edited again.',
+      err,
+    );
   }
 }
 
@@ -168,16 +206,7 @@ export async function createNote(input: NoteCreateInput, userId: number): Promis
     }
 
     // Upsert to vector store
-    try {
-      await upsertDocument(
-        note.id,
-        note.content || '',
-        { note_id: note.id, user_id: userId, title: note.title, type: 'note', tags },
-        note.userSummary,
-      );
-    } catch (err) {
-      console.error(`Failed to submit note ${note.id} for embedding/upsert:`, err);
-    }
+    await indexNote(note, userId, tags);
   });
 
   return note;
@@ -254,22 +283,7 @@ export async function updateNote(
 
   // 4. Re-upsert vectors if content or summary changed.
   if (contentUpdated || summaryUpdated) {
-    try {
-      await upsertDocument(
-        note.id,
-        note.content || '',
-        {
-          note_id: note.id,
-          user_id: userId,
-          title: note.title,
-          type: 'note',
-          tags: manualTagsProvided ? manualTags : aiGeneratedTags,
-        },
-        note.userSummary,
-      );
-    } catch (err) {
-      console.error(`Failed to re-upsert note ${note.id}:`, err);
-    }
+    await indexNote(note, userId, (manualTagsProvided ? manualTags : aiGeneratedTags) ?? []);
   }
 
   // 5. Re-run edge linking if the summary changed.
@@ -297,8 +311,13 @@ export async function deleteNote(noteId: number, userId: number): Promise<Note |
     }
   });
 
-  // Best-effort vector deletion.
-  await deleteDocument(noteId);
+  // Best-effort vector deletion: the row is already gone, so a failure here
+  // leaves orphaned vectors rather than blocking the delete.
+  try {
+    await deleteDocument(noteId);
+  } catch (err) {
+    console.error(`[vectorstore] Failed to delete vectors for note ${noteId}:`, err);
+  }
 
   return note;
 }

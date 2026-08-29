@@ -3,9 +3,9 @@ version: '3.8'
 services:
   postgres_db:
     image: postgres:16 # Pinned for reproducibility (postgres:latest = 18+ changed its data dir layout)
-    container_name: postgres_db_mindmap
+    container_name: synapses_postgres
     environment:
-      POSTGRES_DB: mindmapdb # Changed from default or previous value
+      POSTGRES_DB: synapses_db # Changed from default or previous value
       POSTGRES_USER: user        # Replace with your desired user if different
       POSTGRES_PASSWORD: password  # Replace with your desired password if different
     ports:

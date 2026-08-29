@@ -1,7 +1,8 @@
 // AI routes. Mirrors app/api/api_v1/endpoints/ai.py.
 import { Router } from 'express';
 
-import { querySimilarNotes } from '../ai/vectorstore';
+import { querySimilarNotes, dedupeBySource } from '../ai/vectorstore';
+import { settings } from '../config';
 import { generateRagAnswer } from '../ai/rag';
 import { getCurrentActiveUser } from '../middleware/auth';
 import { HttpError } from '../errors';
@@ -24,12 +25,16 @@ router.get(
     if (!Number.isFinite(topK) || topK < 1) topK = 5;
     if (topK > 20) topK = 20;
 
-    const results = await querySimilarNotes({
+    // Content is chunked, so several hits can come from one note. Over-fetch,
+    // then collapse to the best chunk per note/file before trimming to topK.
+    const matches = await querySimilarNotes({
       queryText: query,
       userId: req.user!.id,
       embeddingTypeFilter: 'content',
-      topK,
+      topK: topK * 3,
+      minScore: settings.SIMILARITY_THRESHOLD_CONTENT,
     });
+    const results = dedupeBySource(matches).slice(0, topK);
 
     res.json({
       query,

@@ -5,7 +5,10 @@ import request from 'supertest';
 vi.mock('../src/ai/vectorstore', () => ({
   upsertDocument: vi.fn(async () => {}),
   deleteDocument: vi.fn(async () => {}),
+  upsertFileDocument: vi.fn(async () => 0),
+  deleteFileDocument: vi.fn(async () => {}),
   querySimilarNotes: vi.fn(async () => []),
+  dedupeBySource: vi.fn((matches: unknown[]) => matches),
 }));
 vi.mock('../src/ai/organizer', () => ({
   suggestTagsForContent: vi.fn(async () => ['alpha', 'beta']),

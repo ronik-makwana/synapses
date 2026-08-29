@@ -63,7 +63,15 @@ router.post(
       throw new HttpError(500, 'Failed to save file to storage');
     }
 
-    res.status(201).json(serializeFile(dbFile));
+    // Index the file's text in the background so the upload response is not
+    // held up by embedding calls.
+    const createdFile = dbFile;
+    const userId = req.user!.id;
+    setImmediate(() => {
+      void crudFile.indexFileContent(createdFile, file.buffer, userId);
+    });
+
+    res.status(201).json(serializeFile(createdFile));
   }),
 );
 

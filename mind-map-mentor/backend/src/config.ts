@@ -46,6 +46,12 @@ const configSchema = z.object({
 
   GOOGLE_API_KEY: z.string().min(1, "GOOGLE_API_KEY is required"),
 
+  // Model IDs are centralized here so a model swap is a config change, not a
+  // code change scattered across the ai/ layer.
+  GOOGLE_EMBEDDING_MODEL: z.string().min(1).default("gemini-embedding-001"),
+
+  GOOGLE_CHAT_MODEL: z.string().min(1).default("gemini-3.6-flash"),
+
   // ============================================================
   // File Storage
   // ============================================================
@@ -137,6 +143,8 @@ export const settings = {
 
   // Google Gemini
   GOOGLE_API_KEY: config.GOOGLE_API_KEY,
+  GOOGLE_EMBEDDING_MODEL: config.GOOGLE_EMBEDDING_MODEL,
+  GOOGLE_CHAT_MODEL: config.GOOGLE_CHAT_MODEL,
 
   // File storage
   FILE_STORAGE_PATH: config.FILE_STORAGE_PATH,

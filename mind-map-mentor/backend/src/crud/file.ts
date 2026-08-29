@@ -3,6 +3,8 @@ import type { File, GraphNode, Prisma } from '../../generated/prisma';
 
 import { prisma } from '../db/client';
 import { buildStoragePath } from '../core/storage';
+import { extractText } from '../core/extraction';
+import { upsertFileDocument, deleteFileDocument } from '../ai/vectorstore';
 import * as crudGraph from './graph';
 
 export interface FileMeta {
@@ -57,6 +59,46 @@ export async function createFileRecord(
   });
 }
 
+/**
+ * Extract an uploaded file's text and index it so files are reachable by
+ * semantic search and RAG, not just visible as graph nodes.
+ *
+ * Best-effort: an un-indexable format (PDF, image, Office document) or an
+ * embedding failure must not fail the upload. Returns the number of chunks
+ * written, or 0 when nothing was indexed.
+ */
+export async function indexFileContent(
+  file: File,
+  buffer: Buffer,
+  userId: number,
+): Promise<number> {
+  const text = extractText(buffer, file.mimeType, file.filename);
+  if (!text) {
+    console.info(
+      `[vectorstore] File ${file.id} (${file.mimeType ?? 'unknown type'}) has no extractable ` +
+        'text; it stays in the graph but is not semantically searchable.',
+    );
+    return 0;
+  }
+
+  try {
+    return await upsertFileDocument(file.id, text, {
+      file_id: file.id,
+      user_id: userId,
+      title: file.filename,
+      type: 'file',
+      mime_type: file.mimeType,
+    });
+  } catch (err) {
+    console.error(
+      `[vectorstore] File ${file.id} could not be indexed. It will not appear in ` +
+        'semantic search or RAG answers.',
+      err,
+    );
+    return 0;
+  }
+}
+
 export async function getFile(fileId: number, userId: number): Promise<File | null> {
   return prisma.file.findFirst({ where: { id: fileId, userId } });
 }
@@ -86,6 +128,15 @@ export async function deleteFileRecord(fileId: number, userId: number): Promise<
   if (gnId != null) {
     await crudGraph.deleteGraphNode(gnId, userId);
   }
+
+  // Best-effort: the row is already gone, so a failure here leaves orphaned
+  // vectors rather than blocking the delete.
+  try {
+    await deleteFileDocument(fileId);
+  } catch (err) {
+    console.error(`[vectorstore] Failed to delete vectors for file ${fileId}:`, err);
+  }
+
   return file;
 }
 
