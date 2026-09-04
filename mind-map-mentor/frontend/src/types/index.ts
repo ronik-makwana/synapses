@@ -1,5 +1,12 @@
 // Shared TypeScript types and interfaces
 
+import type { JSONContent } from '@tiptap/react';
+
+/** A TipTap document — the rich-text source of truth for a note's body.
+ *  The backend derives the plain-text `content` from this on every write; that
+ *  derived text, not this document, is what gets embedded and fed to the AI. */
+export type RichTextDoc = JSONContent;
+
 export interface User {
   id: number;
   email: string;
@@ -12,7 +19,8 @@ export interface Note {
   id: number;
   user_id: number;
   title: string;
-  content: string | null; // Keep null possible if backend allows, but make required for creation
+  content: string | null; // Plain-text projection — previews, search, and the AI pipeline
+  contentJson?: RichTextDoc | null; // Rich-text document — what the editor reopens
   userSummary?: string | null; // Added user summary
   tags?: string[]; // <<< ADDED OPTIONAL TAGS ARRAY
   position_x?: number | null;
@@ -36,13 +44,15 @@ export interface ApiFile {
 // Data required to create a note
 export interface NoteCreateData {
   title: string; // Title is required for creation
-  content?: string | null; // Content is optional
+  content?: string | null; // Plain text — only sent by clients without the rich editor
+  contentJson?: RichTextDoc | null; // Takes precedence; the backend derives `content` from it
 }
 
 // Data allowed when updating a note
 export interface NoteUpdateData {
   title?: string | null; // Title is optional for update
-  content?: string | null; // Content is optional
+  content?: string | null; // Plain text — only sent by clients without the rich editor
+  contentJson?: RichTextDoc | null; // Takes precedence; the backend derives `content` from it
   tags?: string[]; // <<< ADDED OPTIONAL TAGS ARRAY FOR UPDATES
   position_x?: number | null; // Position is optional for update
   position_y?: number | null; // Position is optional for update

@@ -26,9 +26,17 @@ export const changePasswordSchema = z.object({
   newPassword: passwordSchema,
 });
 
+/** The TipTap document. Left unvalidated beyond "is an object" on purpose: the
+ *  editor's schema evolves as extensions are added, and the backend only ever
+ *  walks it to derive plain text. `sanitizeRichText` handles what does matter. */
+const richTextSchema = z.record(z.any());
+
 export const noteCreateSchema = z.object({
   title: z.string(),
-  content: z.string(),
+  // Optional now that `contentJson` can supply it — the backend derives the
+  // plain text whenever a rich document is sent.
+  content: z.string().optional(),
+  contentJson: richTextSchema.nullish(),
   userSummary: z.string().max(300).nullish(),
   position_x: z.number().nullish(),
   position_y: z.number().nullish(),
@@ -37,6 +45,7 @@ export const noteCreateSchema = z.object({
 export const noteUpdateSchema = z.object({
   title: z.string().nullish(),
   content: z.string().nullish(),
+  contentJson: richTextSchema.nullish(),
   userSummary: z.string().max(300).nullish(),
   tags: z.array(z.string()).nullish(),
   position_x: z.number().nullish(),

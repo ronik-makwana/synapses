@@ -11,6 +11,11 @@ import {
   dedupeBySource,
 } from '../ai/vectorstore';
 import { chunkText } from '../ai/chunking';
+import {
+  richTextToPlainText,
+  sanitizeRichText,
+  plainTextToRichText,
+} from '../core/richtext';
 import * as crudGraph from './graph';
 
 const SIMILARITY_THRESHOLD_CONTENT = settings.SIMILARITY_THRESHOLD_CONTENT;
@@ -31,7 +36,8 @@ export type NoteWithGraphNode = Prisma.NoteGetPayload<{ include: typeof WITH_GRA
 
 export interface NoteCreateInput {
   title: string;
-  content: string;
+  content?: string | null;
+  contentJson?: unknown;
   userSummary?: string | null;
   positionX?: number | null;
   positionY?: number | null;
@@ -40,10 +46,38 @@ export interface NoteCreateInput {
 export interface NoteUpdateInput {
   title?: string | null;
   content?: string | null;
+  contentJson?: unknown;
   userSummary?: string | null;
   tags?: string[] | null;
   positionX?: number | null;
   positionY?: number | null;
+}
+
+/**
+ * Reconcile the two representations of a note's body into a consistent pair.
+ *
+ * `contentJson` is what the editor reopens; `content` is the plain text that is
+ * chunked, embedded, searched and put in front of the LLM. They must never
+ * disagree, so exactly one of them is authoritative per write and the other is
+ * always derived here rather than trusted from the request:
+ *
+ *  - a rich document was sent  -> it wins, and `content` is derived from it
+ *  - only plain text was sent  -> `contentJson` is rebuilt to match it, so the
+ *    inline editor on a canvas node cannot leave the editor showing stale text
+ *  - neither was sent          -> `undefined`, and the caller leaves both alone
+ */
+function resolveBody(input: {
+  content?: string | null;
+  contentJson?: unknown;
+}): { content: string; contentJson: unknown } | undefined {
+  if (input.contentJson !== undefined && input.contentJson !== null) {
+    const contentJson = sanitizeRichText(input.contentJson);
+    return { content: richTextToPlainText(contentJson), contentJson };
+  }
+  if (input.content !== undefined && input.content !== null) {
+    return { content: input.content, contentJson: plainTextToRichText(input.content) };
+  }
+  return undefined;
 }
 
 /** Map a similarity score to a descriptive relationship label. */
@@ -191,6 +225,14 @@ export async function createNote(input: NoteCreateInput, userId: number): Promis
   const x = input.positionX ?? 0.0;
   const y = input.positionY ?? 0.0;
 
+  // An empty note is still a valid note, so fall back to an empty body rather
+  // than rejecting a create that carried neither representation.
+  const body = resolveBody(input) ?? { content: '', contentJson: plainTextToRichText('') };
+
+  // The graph node's `data.content` stays plain text: it backs the truncated
+  // preview on the canvas, which wants an excerpt, not markup.
+  const nodeData = { content: body.content };
+
   // 1. Create the graph node and note atomically, then link them.
   const note = await prisma.$transaction(async (tx) => {
     const node = await tx.graphNode.create({
@@ -199,14 +241,15 @@ export async function createNote(input: NoteCreateInput, userId: number): Promis
         label: input.title ?? 'Untitled Note',
         nodeType: 'note',
         position: { x, y },
-        data: { original_note_id: null, content: input.content } as Prisma.InputJsonValue,
+        data: { original_note_id: null, ...nodeData } as Prisma.InputJsonValue,
       },
     });
     const created = await tx.note.create({
       data: {
         userId,
         title: input.title,
-        content: input.content,
+        content: body.content,
+        contentJson: body.contentJson as Prisma.InputJsonValue,
         userSummary: input.userSummary ?? null,
         positionX: x,
         positionY: y,
@@ -215,7 +258,9 @@ export async function createNote(input: NoteCreateInput, userId: number): Promis
     });
     await tx.graphNode.update({
       where: { id: node.id },
-      data: { data: { original_note_id: created.id, content: input.content } as Prisma.InputJsonValue },
+      data: {
+        data: { original_note_id: created.id, ...nodeData } as Prisma.InputJsonValue,
+      },
     });
     return created;
   });
@@ -255,7 +300,12 @@ export async function updateNote(
   const existing = await getNote(noteId, userId);
   if (!existing) return null;
 
-  const contentUpdated = update.content !== undefined && update.content !== existing.content;
+  // Compare the *derived* plain text, not the request field: a rich-text edit
+  // that only changes formatting (bolding a word, re-aligning a paragraph)
+  // leaves the embedded text identical and must not trigger a re-index or a
+  // fresh round of AI tagging and edge linking.
+  const body = resolveBody(update);
+  const contentUpdated = body !== undefined && body.content !== existing.content;
   const summaryUpdated =
     update.userSummary !== undefined && update.userSummary !== existing.userSummary;
   const manualTagsProvided = update.tags !== undefined;
@@ -268,7 +318,11 @@ export async function updateNote(
   // 1. Apply note-field updates.
   const noteData: Prisma.NoteUpdateInput = { updatedAt: new Date() };
   if (update.title !== undefined) noteData.title = update.title;
-  if (update.content !== undefined && update.content !== null) noteData.content = update.content;
+  if (body !== undefined) {
+    // Written together, always — the pair is only meaningful in sync.
+    noteData.content = body.content;
+    noteData.contentJson = body.contentJson as Prisma.InputJsonValue;
+  }
   if (update.userSummary !== undefined) noteData.userSummary = update.userSummary;
   if (update.positionX !== undefined) noteData.positionX = update.positionX;
   if (update.positionY !== undefined) noteData.positionY = update.positionY;

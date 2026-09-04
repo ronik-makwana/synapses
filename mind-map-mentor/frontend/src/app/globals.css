@@ -1,1 +1,99 @@
 @import "tailwindcss";
+
+/* Rich-text (TipTap) content.
+   Tailwind's preflight strips heading, list and link styling, so the editor
+   would otherwise render every block as identical body text and formatting
+   would be invisible while typing. These rules apply to both the editor
+   surface and read-only rendering of the same document. */
+.rich-text {
+  color: var(--color-gray-900, #111827);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.rich-text > * + * {
+  margin-top: 0.75rem;
+}
+
+.rich-text h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.rich-text h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.rich-text h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.rich-text ul,
+.rich-text ol {
+  padding-left: 1.5rem;
+}
+.rich-text ul {
+  list-style: disc;
+}
+.rich-text ol {
+  list-style: decimal;
+}
+.rich-text li > * + * {
+  margin-top: 0.25rem;
+}
+/* Nested lists sit tight against their parent item rather than gaining the
+   inter-block margin above. */
+.rich-text li > ul,
+.rich-text li > ol {
+  margin-top: 0.25rem;
+}
+
+.rich-text a {
+  color: #6d28d9;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rich-text blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 0.75rem;
+  color: #4b5563;
+}
+
+.rich-text code {
+  background: #f3f4f6;
+  border-radius: 0.25rem;
+  padding: 0.1em 0.3em;
+  font-size: 0.85em;
+}
+.rich-text pre {
+  background: #1f2937;
+  color: #f9fafb;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+}
+.rich-text pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
+.rich-text hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* TipTap's Placeholder extension marks the first empty block; the hint is drawn
+   as pseudo-content so it never becomes part of the document. */
+.rich-text p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

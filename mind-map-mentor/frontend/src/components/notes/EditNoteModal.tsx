@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Note, NoteUpdateData } from '@/types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Note, NoteUpdateData, RichTextDoc } from '@/types';
 import toast from 'react-hot-toast';
+import { FiX } from 'react-icons/fi';
+import RichTextEditor, { emptyRichTextDoc, toRichTextDoc } from '@/components/editor/RichTextEditor';
 
 interface EditNoteModalProps {
   note: Note | null; // The note to edit, or null if none
@@ -19,22 +21,28 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
 }) => {
   // Form state
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // The note's document, derived during render rather than in an effect: the
+  // editor reads its content on mount, which happens before effects run, so
+  // loading it from state would leave the editor showing an empty document.
+  // Notes written before the rich editor have a null `contentJson`; their plain
+  // text is promoted to a document here so they open populated, not blank.
+  const initialDoc = useMemo(
+    () => (note ? toRichTextDoc(note.contentJson, note.content) : emptyRichTextDoc()),
+    [note],
+  );
+
+  // Holds the edited document, or null while it is still untouched — in which
+  // case `initialDoc` is what a save should send.
+  const [editedDoc, setEditedDoc] = useState<RichTextDoc | null>(null);
+
   // Initialize form state when the note prop changes or modal opens
   useEffect(() => {
-    if (note) {
-      setTitle(note.title || '');
-      setContent(note.content || '');
-      setError(null); // Clear previous errors when modal opens/note changes
-    } else {
-      // Reset form if note is null (e.g., modal closed)
-      setTitle('');
-      setContent('');
-      setError(null);
-    }
+    setTitle(note?.title || '');
+    setEditedDoc(null);
+    setError(null); // Clear previous errors when modal opens/note changes
   }, [note, isOpen]); // Dependency array includes isOpen to reset on close/reopen
 
   // Early return if the modal is not open or no note is selected
@@ -54,7 +62,7 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
 
     setIsLoading(true);
     try {
-      const updateData: NoteUpdateData = { title, content };
+      const updateData: NoteUpdateData = { title, contentJson: editedDoc ?? initialDoc };
       await onUpdate(note.id, updateData); // Call the onUpdate prop passed from SidePanel
       // onClose(); // Closing is handled by SidePanel after successful update
     } catch (err: unknown) {
@@ -71,7 +79,25 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 transition-opacity duration-300 ease-in-out">
       {/* Modal Content */}
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto mx-auto">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900">Edit Note (ID: {note.id})</h2>
+        <div className="flex justify-between items-start gap-3 mb-4">
+          {/* The note's own title identifies it far better than its row ID did. */}
+          <h2 className="text-xl font-semibold text-gray-900 min-w-0">
+            Edit{' '}
+            <span className="font-normal text-gray-600" title={note.title || undefined}>
+              {note.title || 'Untitled Note'}
+            </span>
+          </h2>
+          <button
+            type="button" // Inside the form — a bare button would submit it.
+            onClick={onClose}
+            disabled={isLoading}
+            title="Close"
+            aria-label="Close"
+            className="shrink-0 p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none disabled:opacity-50"
+          >
+            <FiX className="h-5 w-5" />
+          </button>
+        </div>
         
         {/* Form Inputs */}
         <div className="space-y-4">
@@ -87,13 +113,16 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
             />
           </div>
           <div>
-             <label htmlFor="edit-note-content" className="block text-sm font-medium text-gray-700">Content</label>
-            <textarea
-              id="edit-note-content"
-              rows={12}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm resize-y focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm bg-white text-gray-900"
+            <span className="block text-sm font-medium text-gray-700 mb-1">Content</span>
+            {/* The editor reads its document once on mount, so it is keyed on the
+                note to reload when a different one is opened. */}
+            <RichTextEditor
+              key={note.id}
+              initialContent={initialDoc}
+              onChange={setEditedDoc}
+              placeholder="Write your note…"
+              minHeight="14rem"
+              disabled={isLoading}
             />
           </div>
           {/* Tags are generated in a background pass after a save, so a note saved

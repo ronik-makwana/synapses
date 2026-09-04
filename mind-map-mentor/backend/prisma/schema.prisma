@@ -31,6 +31,7 @@ model Note {
   userId      Int        @map("user_id")
   title       String?
   content     String     @db.Text
+  contentJson Json?      @map("content_json")
   positionX   Float?     @map("position_x")
   positionY   Float?     @map("position_y")
   graphNodeId Int?       @unique @map("graph_node_id")

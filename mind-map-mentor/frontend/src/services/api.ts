@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useAuthStore } from '@/store/authStore'; // Import Zustand store
 import {
-  Note, NoteUpdateData, User, ApiFile, BackendGraphNode, BackendGraphEdge,
+  Note, NoteUpdateData, RichTextDoc, User, ApiFile, BackendGraphNode, BackendGraphEdge,
   SearchResponse, RagQueryRequest, RagQueryResponse
 } from '@/types'; // Import Note, NoteUpdateData, User, File types AND AI types
 
@@ -147,6 +147,7 @@ export const fetchNotes = async (skip: number = 0, limit: number = 100, search: 
 interface NoteCreatePayload {
   title: string;
   content?: string | null; // Make content optional/nullable
+  contentJson?: RichTextDoc | null; // Rich-text document; backend derives `content` from it
   position_x?: number;
   position_y?: number;
 }

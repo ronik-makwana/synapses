@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { NoteCreateData } from '@/types';
+import { NoteCreateData, RichTextDoc } from '@/types';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import { FiX } from 'react-icons/fi';
+import RichTextEditor, { emptyRichTextDoc } from '@/components/editor/RichTextEditor';
 
 interface CreateNoteModalProps {
   isOpen: boolean;
@@ -15,26 +16,31 @@ interface CreateNoteModalProps {
 // Update Constants
 const MAX_CONTENT_LENGTH = 1000; // Define the character limit
 
+/** Stable reference so the editor's mount-time content never changes identity. */
+const EMPTY_DOC = emptyRichTextDoc();
+
 const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCreate }) => {
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [contentLength, setContentLength] = useState(0); // State for character count
+  // The document is what gets saved; the plain text is only kept to drive the
+  // character counter, since a limit on the JSON's size would be meaningless.
+  const [contentDoc, setContentDoc] = useState<RichTextDoc>(emptyRichTextDoc);
+  const [contentText, setContentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const contentLength = contentText.trim().length;
 
   useEffect(() => {
     if (isOpen) {
       setTitle('');
-      setContent('');
-      setContentLength(0); // Reset count when modal opens
+      setContentDoc(emptyRichTextDoc());
+      setContentText('');
       setIsSubmitting(false);
     }
   }, [isOpen]);
 
-  // Update content and character count
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newContent = e.target.value;
-      setContent(newContent);
-      setContentLength(newContent.length);
+  const handleContentChange = (doc: RichTextDoc, plainText: string) => {
+    setContentDoc(doc);
+    setContentText(plainText);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,7 +59,9 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
 
     const noteData: NoteCreateData = {
       title: title.trim(),
-      content: content.trim() || null,
+      // Only the document is sent — the backend derives the plain-text `content`
+      // it embeds from it, so the two can never disagree.
+      contentJson: contentDoc,
     };
 
     try {
@@ -82,9 +90,12 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Create New Note</h2>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
             disabled={isSubmitting}
+            title="Close"
+            aria-label="Close"
+            className="shrink-0 p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none disabled:opacity-50"
           >
             <FiX className="h-5 w-5" />
           </button>
@@ -105,20 +116,18 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
             />
           </div>
           <div className="mb-1"> {/* Reduce bottom margin */}
-            <label htmlFor="note-content" className="block text-sm font-medium text-gray-700 mb-1">
+            <span className="block text-sm font-medium text-gray-700 mb-1">
               Content
-            </label>
-            <textarea
-              id="note-content"
-              value={content}
-              onChange={handleContentChange} // Use new handler
-              rows={12}
-              className={clsx(
-                  "w-full px-3 py-2 border rounded-md shadow-sm resize-y focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
-                  isOverLimit ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300"
-              )}
-              placeholder="Enter note content..."
-              // No maxLength attribute needed here as validation is done via state
+            </span>
+            <RichTextEditor
+              // A new note always starts blank, and the modal unmounts on close,
+              // so the editor never needs to be reloaded in place.
+              initialContent={EMPTY_DOC}
+              onChange={handleContentChange}
+              placeholder="Enter note content…"
+              minHeight="14rem"
+              disabled={isSubmitting}
+              invalid={isOverLimit}
             />
           </div>
           {/* Character Counter */}

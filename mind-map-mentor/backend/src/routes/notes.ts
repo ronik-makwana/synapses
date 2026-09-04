@@ -33,6 +33,7 @@ router.post(
       {
         title: body.title,
         content: body.content,
+        contentJson: body.contentJson,
         userSummary: body.userSummary ?? null,
         positionX: body.position_x ?? undefined,
         positionY: body.position_y ?? undefined,
@@ -65,6 +66,7 @@ router.put(
       {
         title: body.title ?? undefined,
         content: body.content ?? undefined,
+        contentJson: body.contentJson ?? undefined,
         userSummary: body.userSummary,
         tags: body.tags ?? undefined,
         positionX: body.position_x ?? undefined,

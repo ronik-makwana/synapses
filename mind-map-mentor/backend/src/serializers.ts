@@ -31,7 +31,10 @@ export function serializeNote(n: Note & { graphNode?: { data: unknown } | null }
     id: n.id,
     user_id: n.userId,
     title: n.title,
+    // `content` is the derived plain text; `contentJson` is what the editor
+    // reopens. Both are sent so a client can render either without a round trip.
     content: n.content,
+    contentJson: n.contentJson ?? null,
     userSummary: n.userSummary ?? null,
     // [] when the caller did not join the node, or before the background tag
     // pass has run — never absent, so the client can rely on the field.
